@@ -1,39 +1,30 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './components/auth/AuthProvider'
+import ProtectedRoute from './components/auth/ProtectedRoute'
+import AuthCallback from './components/auth/AuthCallback'
+import Homepage from './pages/Homepage'
+import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
 
-function App() {
-  const [count, setCount] = useState(0)
-  // In your utils/api.js or anywhere you need the API URL
-  const API_URL = import.meta.env.VITE_API_URL;
-
-  // Example usage:
-  console.log('API URL:', import.meta.env.VITE_API_URL);
-
+const App = () => {
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <Router>
+      <AuthProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Homepage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </AuthProvider>
+    </Router>
   )
 }
 
