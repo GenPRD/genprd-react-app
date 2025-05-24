@@ -24,7 +24,7 @@ const Dashboard = () => {
     }
 
     fetchDashboard()
-  }, [getDashboard])
+  }, []) // ← REMOVE getDashboard from dependency array
 
   if (loading) {
     return (

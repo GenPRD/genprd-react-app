@@ -1,28 +1,55 @@
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { useAuth } from '../hooks/useAuth'
 
 const Login = () => {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   const [error, setError] = useState(null)
+
+  // If already authenticated, redirect to dashboard or intended page
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirectPath = searchParams.get('redirect') || '/dashboard'
+      navigate(redirectPath, { replace: true })
+    }
+  }, [isAuthenticated, searchParams, navigate])
 
   useEffect(() => {
     const errorParam = searchParams.get('error')
     if (errorParam) {
       const errorMessages = {
-        'access_denied': 'Authorization was cancelled',
+        'no_code': 'Authorization code not received',
         'auth_failed': 'Authentication failed',
-        'server_error': 'Server error occurred'
+        'server_error': 'Server error occurred',
+        'missing_data': 'Authentication data missing',
+        'parse_error': 'Error processing authentication',
+        'callback_error': 'Callback processing failed',
+        'session_expired': 'Your session has expired',
+        'unauthorized': 'Please log in again'
       }
       setError(errorMessages[errorParam] || 'Authentication failed')
     }
   }, [searchParams])
 
   const handleGoogleLogin = () => {
-    setError(null) // Clear any previous errors
+    setError(null)
+    console.log('🚀 Initiating Google login...')
     
-    // Always use your Express API endpoint
-    window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`
+    // Store the redirect URL in localStorage so AuthCallback can use it
+    const redirectPath = searchParams.get('redirect') || '/dashboard'
+    localStorage.setItem('auth_redirect', redirectPath)
+    
+    console.log('Redirecting to:', `${import.meta.env.VITE_API_URL}/auth/web/google`)
+    
+    // Use the web-specific route
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/web/google`
   }
+
+  // Show redirect message if user was redirected here
+  const redirectMessage = searchParams.get('redirect') ? 
+    'Please log in to access this page.' : null
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center">
@@ -33,6 +60,21 @@ const Login = () => {
             <h2 className="mt-4 text-2xl font-bold text-gray-900">Welcome back</h2>
             <p className="mt-2 text-gray-600">Sign in to your account to continue</p>
           </div>
+
+          {redirectMessage && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-blue-800">{redirectMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">

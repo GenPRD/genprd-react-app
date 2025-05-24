@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 import { 
   BoltIcon, 
   UserGroupIcon, 
@@ -8,6 +9,7 @@ import {
 import { useTestAPI } from '../hooks/useApi'
 
 const Homepage = () => {
+  const { user, isAuthenticated, logout } = useAuth()
   const [apiStatus, setApiStatus] = useState('checking...')
   const { testConnection, loading } = useTestAPI()
 
@@ -34,12 +36,35 @@ const Homepage = () => {
               <h1 className="text-2xl font-bold text-primary-600">GenPRD</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Link
-                to="/login"
-                className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                Get Started
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <img 
+                    src={user?.avatar_url} 
+                    alt={user?.name}
+                    className="w-8 h-8 rounded-full"
+                  />
+                  <span className="text-gray-700">{user?.name}</span>
+                  <Link
+                    to="/dashboard"
+                    className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+                >
+                  Get Started
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -68,12 +93,29 @@ const Homepage = () => {
           </div>
 
           <div className="flex justify-center space-x-4">
-            <Link
-              to="/login"
-              className="bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors"
-            >
-              Start Creating PRDs
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors"
+                >
+                  Go to Dashboard
+                </Link>
+                <Link
+                  to="/prds/new"
+                  className="bg-white text-primary-600 px-8 py-3 rounded-lg text-lg font-semibold border border-primary-600 hover:bg-primary-50 transition-colors"
+                >
+                  Create New PRD
+                </Link>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="bg-primary-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors"
+              >
+                Start Creating PRDs
+              </Link>
+            )}
           </div>
         </div>
 
@@ -103,12 +145,43 @@ const Homepage = () => {
             <p className="text-gray-600">Export your PRDs as professional PDF documents</p>
           </div>
         </div>
+
+        {/* Demo protected routes for authenticated users */}
+        {isAuthenticated && (
+          <div className="mt-16 bg-white rounded-lg shadow-sm p-8">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link 
+                to="/prds" 
+                className="p-4 border border-gray-200 rounded-lg hover:border-primary-600 transition-colors"
+              >
+                <h4 className="font-medium text-gray-900">View All PRDs</h4>
+                <p className="text-sm text-gray-600">Manage your product documents</p>
+              </Link>
+              <Link 
+                to="/personnel" 
+                className="p-4 border border-gray-200 rounded-lg hover:border-primary-600 transition-colors"
+              >
+                <h4 className="font-medium text-gray-900">Manage Personnel</h4>
+                <p className="text-sm text-gray-600">Add and organize team members</p>
+              </Link>
+              <Link 
+                to="/prds/new" 
+                className="p-4 border border-gray-200 rounded-lg hover:border-primary-600 transition-colors"
+              >
+                <h4 className="font-medium text-gray-900">Create PRD</h4>
+                <p className="text-sm text-gray-600">Start a new project document</p>
+              </Link>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Environment Test Component */}
       <div className="p-4">
         <h3>Environment Test</h3>
         <p>API URL: {import.meta.env.VITE_API_URL}</p>
+        <p>User Status: {isAuthenticated ? `Logged in as ${user?.email}` : 'Not logged in'}</p>
       </div>
     </div>
   )

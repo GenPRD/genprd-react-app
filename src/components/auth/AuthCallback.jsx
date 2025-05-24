@@ -12,42 +12,56 @@ const AuthCallback = () => {
       try {
         console.log('🚀 Starting handleAuth function')
         
-        // Get code from URL
-        const code = new URLSearchParams(window.location.search).get('code')
-        console.log('Code from URL:', code ? 'EXISTS' : 'MISSING')
+        // Get parameters from URL (sent by backend redirect)
+        const urlParams = new URLSearchParams(window.location.search)
+        const token = urlParams.get('token')
+        const refreshToken = urlParams.get('refresh_token')
+        const userParam = urlParams.get('user')
         
-        if (!code) {
-          console.log('❌ No code found, redirecting to login')
-          window.location.href = '/login'
+        console.log('Token from URL:', token ? 'EXISTS' : 'MISSING')
+        console.log('Refresh Token from URL:', refreshToken ? 'EXISTS' : 'MISSING')
+        console.log('User from URL:', userParam ? 'EXISTS' : 'MISSING')
+        
+        if (!token || !userParam) {
+          console.log('❌ Missing token or user data, redirecting to login')
+          window.location.href = '/login?error=missing_data'
           return
         }
 
-        console.log('📡 Making API call to Express...')
-        // Call API
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/google/callback?code=${code}`)
-        console.log('API Response Status:', response.status)
-        
-        const data = await response.json()
-        console.log('API Response Data:', data)
-        
-        // Store and redirect
-        if (data.status === 'success') {
-          console.log('✅ Success response received')
-          localStorage.setItem('jwt_token', data.access_token)
-          localStorage.setItem('user_data', JSON.stringify(data.user))
-          login(data.user, data.access_token)
+        try {
+          // Parse user data
+          const userData = JSON.parse(decodeURIComponent(userParam))
+          console.log('✅ Successfully parsed user data:', userData.email)
           
-          console.log('🏠 Redirecting to dashboard...')
+          // Store tokens and user data
+          localStorage.setItem('jwt_token', token)
+          if (refreshToken) {
+            localStorage.setItem('refresh_token', refreshToken)
+            console.log('✅ Refresh token stored')
+          }
+          localStorage.setItem('user_data', JSON.stringify(userData))
+          console.log('✅ All auth data stored in localStorage')
+          
+          // Update React state
+          login(userData, token)
+          console.log('✅ React auth state updated')
+          
+          // Get redirect path and clean up
+          const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
+          localStorage.removeItem('auth_redirect')
+          
+          console.log('🏠 Redirecting to:', redirectPath)
           // Force a full page reload to ensure React state updates
-          window.location.href = '/dashboard'
-        } else {
-          console.log('❌ Failed response, redirecting to login')
-          window.location.href = '/login'
+          window.location.href = redirectPath
+          
+        } catch (parseError) {
+          console.error('❌ Error parsing user data:', parseError)
+          window.location.href = '/login?error=parse_error'
         }
         
       } catch (error) {
         console.error('❌ Error in handleAuth:', error)
-        window.location.href = '/login'
+        window.location.href = '/login?error=callback_error'
       }
     }
 
@@ -55,8 +69,12 @@ const AuthCallback = () => {
   }, [login])
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div>Processing...</div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Processing authentication...</p>
+        <p className="text-sm text-gray-500 mt-2">Please wait while we log you in</p>
+      </div>
     </div>
   )
 }

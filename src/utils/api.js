@@ -23,16 +23,51 @@ api.interceptors.request.use(
   }
 )
 
-// Add response interceptor to handle auth errors
+// Add response interceptor to handle auth errors and token refresh
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
+  async (error) => {
+    const originalRequest = error.config
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+
+      // Try to refresh the token
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (refreshToken) {
+        try {
+          console.log('🔄 Attempting token refresh...')
+          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+            refresh_token: refreshToken
+          })
+
+          if (response.data.status === 'success') {
+            const newToken = response.data.access_token
+            localStorage.setItem('jwt_token', newToken)
+            console.log('✅ Token refreshed successfully')
+
+            // Retry the original request with new token
+            originalRequest.headers.Authorization = `Bearer ${newToken}`
+            return api(originalRequest)
+          }
+        } catch (refreshError) {
+          console.error('❌ Token refresh failed:', refreshError)
+          // Refresh failed, redirect to login
+          localStorage.removeItem('jwt_token')
+          localStorage.removeItem('refresh_token')
+          localStorage.removeItem('user_data')
+          window.location.href = '/login?error=session_expired'
+          return Promise.reject(refreshError)
+        }
+      }
+
+      // No refresh token or refresh failed
       localStorage.removeItem('jwt_token')
+      localStorage.removeItem('refresh_token')
       localStorage.removeItem('user_data')
-      window.location.href = '/login'
+      window.location.href = '/login?error=unauthorized'
     }
+
     return Promise.reject(error)
   }
 )

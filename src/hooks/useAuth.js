@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react'
+import api from '../utils/api'
 
 // Create Auth Context
 const AuthContext = createContext()
@@ -33,6 +34,7 @@ export const useAuthProvider = () => {
       } catch (error) {
         console.error('Error parsing saved user data:', error)
         localStorage.removeItem('jwt_token')
+        localStorage.removeItem('refresh_token')
         localStorage.removeItem('user_data')
       }
     } else {
@@ -43,17 +45,31 @@ export const useAuthProvider = () => {
 
   // Simplified login function
   const login = (userData, tokenData) => {
-    console.log('login() called')
+    console.log('login() called with user:', userData.email)
     setUser(userData)
     setToken(tokenData)
-    // No redirect here anymore
   }
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      console.log('🚪 Initiating logout...')
+      
+      // Call logout endpoint to revoke refresh tokens
+      await api.post('/auth/logout')
+      console.log('✅ Server logout successful')
+    } catch (error) {
+      console.error('❌ Server logout failed:', error)
+      // Continue with local logout even if server call fails
+    }
+    
+    // Clear local state and storage
     setUser(null)
     setToken(null)
     localStorage.removeItem('jwt_token')
+    localStorage.removeItem('refresh_token')
     localStorage.removeItem('user_data')
+    console.log('✅ Local logout completed')
+    
     window.location.href = '/'
   }
 
