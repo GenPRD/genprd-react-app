@@ -1,6 +1,4 @@
 node_modules/
-src/
-public/
 .git/
 .github/
 .gitignore
@@ -9,6 +7,3 @@ README.md
 .vscode/
 ignore/
 *.log
-package-lock.json
-vite.config.js
-eslint.config.js
