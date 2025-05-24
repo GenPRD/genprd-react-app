@@ -9,6 +9,13 @@ handlers:
   secure: always
   expiration: "1d"
 
+# Serve all public folder files (vite.svg, etc.)
+- url: /(.+\.(svg|png|jpg|jpeg|gif|ico|css|js|json|txt))$
+  static_files: dist/\1
+  upload: dist/.*\.(svg|png|jpg|jpeg|gif|ico|css|js|json|txt)$
+  secure: always
+  expiration: "1d"
+
 # Serve favicon
 - url: /favicon.ico
   static_files: dist/favicon.ico
