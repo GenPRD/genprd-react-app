@@ -7,3 +7,9 @@ README.md
 .vscode/
 ignore/
 *.log
+vite.config.js
+eslint.config.js
+src/
+public/
+package.json
+package-lock.json

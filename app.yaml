@@ -1,3 +1,4 @@
+runtime: nodejs22
 service: default
 
 handlers:
@@ -24,3 +25,5 @@ automatic_scaling:
   min_instances: 0
   max_instances: 2
   target_cpu_utilization: 0.6
+
+instance_class: F2
