@@ -1,0 +1,27 @@
+runtime: nodejs18
+
+handlers:
+# Serve static assets with caching
+- url: /assets/*
+  static_dir: dist/assets
+  secure: always
+  expiration: "1d"
+
+# Serve favicon
+- url: /favicon.ico
+  static_files: dist/favicon.ico
+  upload: dist/favicon.ico
+  secure: always
+
+# Catch all for SPA routing - serve index.html
+- url: /.*
+  static_files: dist/index.html
+  upload: dist/index.html
+  secure: always
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 2
+  target_cpu_utilization: 0.6
+
+instance_class: F2

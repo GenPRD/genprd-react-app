@@ -1,0 +1,14 @@
+node_modules/
+src/
+public/
+.git/
+.github/
+.gitignore
+README.md
+.env*
+.vscode/
+ignore/
+*.log
+package-lock.json
+vite.config.js
+eslint.config.js
