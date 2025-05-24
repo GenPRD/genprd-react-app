@@ -1,9 +1,10 @@
-runtime: nodejs22
+service: default
 
 handlers:
 # Serve static assets with caching
-- url: /assets/*
-  static_dir: dist/assets
+- url: /assets/(.*)
+  static_files: dist/assets/\1
+  upload: dist/assets/.*
   secure: always
   expiration: "1d"
 
@@ -23,5 +24,3 @@ automatic_scaling:
   min_instances: 0
   max_instances: 2
   target_cpu_utilization: 0.6
-
-instance_class: F2

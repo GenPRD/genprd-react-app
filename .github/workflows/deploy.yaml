@@ -32,6 +32,8 @@ jobs:
         ls -la dist/
         echo "Checking if index.html exists:"
         cat dist/index.html | head -20
+        echo "Checking assets folder:"
+        ls -la dist/assets/ || echo "No assets folder"
     
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
