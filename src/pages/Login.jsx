@@ -6,7 +6,7 @@ import { FcGoogle } from 'react-icons/fc'
 import { motion } from 'framer-motion'
 import AuthGlassCard from '../components/auth/AuthGlassCard'
 
-const bgUrl = '/ai-bg.jpg' // Place your image in public/ and use the correct path
+const bgUrl = '/login_bg.jpg'
 
 const Login = () => {
   const [searchParams] = useSearchParams()
@@ -69,7 +69,7 @@ const Login = () => {
         className="absolute inset-0 w-full h-full object-cover object-left opacity-80 select-none pointer-events-none z-0"
         draggable="false"
       />
-      <div className="absolute inset-0 bg-gradient-to-br from-white/80 via-primary-50/80 to-primary-100/90 z-10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-primary-50/90 to-primary-100/95 z-10 backdrop-blur-md" />
       <main className="relative z-20 flex flex-col items-center justify-center w-full min-h-screen px-4">
         <AuthGlassCard>
           <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent tracking-tight mb-2 text-center select-none">
@@ -117,7 +117,7 @@ const Login = () => {
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 rounded-lg border border-white/40 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 text-gray-700 placeholder-gray-400 shadow-sm"
+                  className="block w-full pl-10 pr-3 py-2 rounded-lg border border-white/40 bg-white/90 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 text-gray-700 placeholder-gray-400 shadow-sm"
                   placeholder="you@email.com"
                 />
               </div>
@@ -135,7 +135,7 @@ const Login = () => {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 rounded-lg border border-white/40 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 text-gray-700 placeholder-gray-400 shadow-sm"
+                  className="block w-full pl-10 pr-3 py-2 rounded-lg border border-white/40 bg-white/90 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 text-gray-700 placeholder-gray-400 shadow-sm"
                   placeholder="Password"
                 />
               </div>

@@ -21,55 +21,55 @@ export const useAuthProvider = () => {
 
   // Check for existing token on app load
   useEffect(() => {
-    console.log('useAuthProvider: Checking for existing auth data...')
-    const savedToken = localStorage.getItem('jwt_token')
-    const savedUser = localStorage.getItem('user_data')
-    
-    if (savedToken && savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser)
-        console.log('useAuthProvider: Found existing auth data for:', parsedUser.email)
-        setToken(savedToken)
-        setUser(parsedUser)
-      } catch (error) {
-        console.error('Error parsing saved user data:', error)
-        localStorage.removeItem('jwt_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user_data')
+    let didCancel = false
+    const checkAuth = () => {
+      const savedToken = localStorage.getItem('jwt_token')
+      const savedUser = localStorage.getItem('user_data')
+      if (savedToken && savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser)
+          if (!didCancel) {
+            setToken(prev => prev !== savedToken ? savedToken : prev)
+            setUser(prev => prev?.email !== parsedUser.email ? parsedUser : prev)
+          }
+        } catch (error) {
+          if (!didCancel) {
+            localStorage.removeItem('jwt_token')
+            localStorage.removeItem('refresh_token')
+            localStorage.removeItem('user_data')
+            setUser(null)
+            setToken(null)
+          }
+        }
+      } else {
+        if (!didCancel) {
+          setUser(null)
+          setToken(null)
+        }
       }
-    } else {
-      console.log('useAuthProvider: No existing auth data found')
+      if (!didCancel) setLoading(false)
     }
-    setLoading(false)
+    checkAuth()
+    return () => { didCancel = true }
   }, [])
 
   // Simplified login function
   const login = (userData, tokenData) => {
-    console.log('login() called with user:', userData.email)
     setUser(userData)
     setToken(tokenData)
   }
 
   const logout = async () => {
     try {
-      console.log('🚪 Initiating logout...')
-      
-      // Call logout endpoint to revoke refresh tokens
       await api.post('/auth/logout')
-      console.log('✅ Server logout successful')
     } catch (error) {
-      console.error('❌ Server logout failed:', error)
       // Continue with local logout even if server call fails
     }
-    
-    // Clear local state and storage
     setUser(null)
     setToken(null)
     localStorage.removeItem('jwt_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user_data')
-    console.log('✅ Local logout completed')
-    
     window.location.href = '/'
   }
 
