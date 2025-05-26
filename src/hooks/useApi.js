@@ -44,7 +44,11 @@ export const useDashboard = () => {
   const getDashboard = async () => {
     return makeRequest(async () => {
       const response = await api.get('/dashboard')
-      return response.data
+      // Extract the data from the API response structure
+      if (response.data && response.data.data) {
+        return response.data.data // Return just the data object from the response
+      }
+      return {} // Return empty object if the structure is not as expected
     })
   }
 

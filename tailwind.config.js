@@ -8,16 +8,22 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#E1F5FE',  
+          100: '#B3E5FC',
+          200: '#81D4FA',
+          300: '#4FC3F7', 
+          400: '#29B6F6',
+          500: '#00B0FF',  
+          600: '#039BE5',
+          700: '#0288D1',
+          800: '#0277BD',
+          900: '#01579B',
+        },
+        badge: {
+          draft: '#D3D3D3',
+          progress: '#00B0FF', 
+          finished: '#28A745',
+          archived: '#696969',
         }
       }
     },

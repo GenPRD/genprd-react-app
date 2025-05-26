@@ -9,7 +9,6 @@ import Dashboard from './pages/Dashboard'
 import Personnel from './pages/Personnel'
 import PRDs from './pages/PRDs'
 import PRDForm from './pages/PRDForm'
-import PRDEdit from './pages/PRDEdit'
 import PRDDetail from './pages/PRDDetail'
 
 const App = () => {
@@ -62,12 +61,6 @@ const App = () => {
           <Route path="/prds/:id" element={
             <ProtectedRoute>
               <PRDDetail />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/prds/:id/edit" element={
-            <ProtectedRoute>
-              <PRDEdit />
             </ProtectedRoute>
           } />
           
