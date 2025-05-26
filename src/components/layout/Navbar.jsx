@@ -1,18 +1,41 @@
 import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth'
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { 
+  BellIcon, 
+  QuestionMarkCircleIcon,
+  PlusIcon
+} from '@heroicons/react/24/outline';
+import { Button } from '@mui/material';
 
 const Navbar = () => {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const notificationsRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Close dropdown when clicking outside
+  // Page titles based on current path
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/dashboard') return 'Dashboard';
+    if (path.includes('/prds') && path !== '/prds/new') return 'Product Requirements';
+    if (path === '/prds/new') return 'Create PRD';
+    if (path.includes('/personnel')) return 'Personnel';
+    if (path.includes('/profile')) return 'Profile Settings';
+    return 'GenPRD';
+  };
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target)) {
+        setNotificationsOpen(false);
       }
     };
 
@@ -24,6 +47,12 @@ const Navbar = () => {
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
+    if (notificationsOpen) setNotificationsOpen(false);
+  };
+
+  const toggleNotifications = () => {
+    setNotificationsOpen(!notificationsOpen);
+    if (dropdownOpen) setDropdownOpen(false);
   };
 
   const handleLogout = async () => {
@@ -32,55 +61,154 @@ const Navbar = () => {
     navigate('/');
   };
 
-  return (
-    <header className="flex items-center justify-between bg-white/80 backdrop-blur-lg backdrop-saturate-150 border-b border-white/40 px-6 py-3 shadow-md flex-shrink-0 z-30 relative">
-      {/* Left side - potentially for a menu button or other branding if needed */}
-      <div className="flex-grow" />
-      
-      {/* Right side - User Avatar with Dropdown */}
-      <div className="relative" ref={dropdownRef}>
-        {user && (
-          <button
-            onClick={toggleDropdown}
-            className="focus:outline-none rounded-full transition-opacity hover:opacity-90"
-            aria-label="User menu"
-          >
-            <img
-              src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || user?.email || 'User')}&background=random&color=fff`}
-              alt={user?.name || 'User Avatar'}
-              className="w-9 h-9 rounded-full border border-primary-300 object-cover"
-            />
-          </button>
-        )}
+  // Mock notifications
+  const notifications = [
+    {
+      id: 1,
+      message: 'Alex commented on "Mobile App Redesign"',
+      time: '2 hours ago',
+      read: false
+    },
+    {
+      id: 2,
+      message: 'Sarah shared "Backend API Refactoring" with you',
+      time: 'Yesterday',
+      read: false
+    },
+    {
+      id: 3,
+      message: '"Customer Portal" PRD was approved',
+      time: '3 days ago',
+      read: true
+    }
+  ];
 
-        {dropdownOpen && (
-          <div className="absolute right-0 mt-3 w-48 bg-white rounded-lg overflow-hidden shadow-xl ring-1 ring-black ring-opacity-5 z-50">
-            <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button">
-              {/* Dropdown Items */}
-              <button
-                onClick={() => {
-                  console.log('Profile Settings clicked');
-                  setDropdownOpen(false);
-                  // TODO: Navigate to profile settings page when created
-                }}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                role="menuitem"
-              >
-                Profile Settings
-              </button>
-              <button
-                onClick={handleLogout}
-                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                role="menuitem"
-              >
-                Logout
-              </button>
-            </div>
+  return (
+    <header className="bg-white border-b border-gray-300 px-6 py-4 flex-shrink-0 z-30 sticky top-0">
+      <div className="flex items-center justify-between w-full">
+        {/* Left side - Page Title */}
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">{getPageTitle()}</h1>
+        </div>
+        
+        {/* Right side - Notifications and User Menu */}
+        <div className="flex items-center space-x-3">
+          {/* Help Icon */}
+          <button 
+            className="p-1.5 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none"
+            onClick={() => window.open('https://genprd-docs.example.com', '_blank')}
+          >
+            <QuestionMarkCircleIcon className="w-6 h-6" />
+          </button>
+          
+          {/* Notifications */}
+          <div className="relative" ref={notificationsRef}>
+            <button 
+              className="p-1.5 rounded-full text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none relative"
+              onClick={toggleNotifications}
+            >
+              <BellIcon className="w-6 h-6" />
+              <span className="absolute top-0 right-0 bg-gray-800 w-2 h-2 rounded-full"></span>
+            </button>
+            
+            {notificationsOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-md overflow-hidden shadow-md border border-gray-200 z-50">
+                <div className="py-2 px-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                  <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+                  <button className="text-xs text-gray-700 hover:text-gray-900">Mark all as read</button>
+                </div>
+                <div className="max-h-96 overflow-y-auto">
+                  {notifications.length > 0 ? (
+                    <div>
+                      {notifications.map(notification => (
+                        <div 
+                          key={notification.id} 
+                          className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 ${notification.read ? '' : 'bg-gray-50'}`}
+                        >
+                          <p className="text-sm text-gray-800">{notification.message}</p>
+                          <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-gray-500 text-sm">No notifications</p>
+                    </div>
+                  )}
+                </div>
+                <div className="py-2 px-4 bg-gray-50 border-t border-gray-200">
+                  <button className="text-xs text-gray-700 hover:text-gray-900">
+                    View all notifications
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+          
+          {/* User Profile */}
+          <div className="relative" ref={dropdownRef}>
+            {user && (
+              <div className="flex items-center">
+                <span className="text-sm text-gray-700 mr-3 hidden sm:inline-block">
+                  {user?.name || user?.email || 'User'}
+                </span>
+                <button
+                  onClick={toggleDropdown}
+                  className="focus:outline-none rounded-full border border-gray-300"
+                  aria-label="User menu"
+                >
+                  <img
+                    src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || user?.email || 'User')}&background=f0f0f0&color=333333`}
+                    alt={user?.name || 'User Avatar'}
+                    className="w-9 h-9 rounded-full object-cover"
+                  />
+                </button>
+              </div>
+            )}
+
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-md overflow-hidden shadow-md border border-gray-200 z-50">
+                <div className="py-3 px-4 border-b border-gray-200">
+                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                </div>
+                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button">
+                  {/* Dropdown Items */}
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/profile');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    role="menuitem"
+                  >
+                    Profile Settings
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/prds');
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    role="menuitem"
+                  >
+                    My PRDs
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    role="menuitem"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </header>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;
