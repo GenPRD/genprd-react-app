@@ -14,25 +14,22 @@ import {
 
 const Dashboard = () => {
   const { user } = useAuth()
-  const { getDashboard, loading, error } = useDashboard()
-  const [dashboardData, setDashboardData] = useState(null)
+  const { dashboardData, loading, error, getDashboard } = useDashboard()
+
+  console.log('🔄 Dashboard render. State:', { user: !!user, loading, error, hasData: !!dashboardData })
 
   useEffect(() => {
-    if (user) {
-      const fetchDashboard = async () => {
-        try {
-          const data = await getDashboard()
-          setDashboardData(data)
-        } catch (err) {
-          // error handled below
-        }
-      }
-      fetchDashboard()
+    console.log('🔄 Dashboard useEffect triggered. User:', !!user, 'Loading:', loading, 'Has Data:', !!dashboardData, 'Error:', error)
+    if (user && !dashboardData && !loading && !error) {
+      console.log('📊 Dashboard: Triggering data fetch for user:', user.email)
+      getDashboard()
     }
-  }, [user, getDashboard])
+  }, [user, dashboardData, loading, error, getDashboard])
 
   const counts = dashboardData?.counts || {}
   const recentPRDs = dashboardData?.recentPRDs || []
+
+  console.log('🔄 Dashboard about to render with:', { loading, error, hasData: !!dashboardData, counts, recentPRDs: recentPRDs.length })
 
   return (
     <motion.div
@@ -43,7 +40,7 @@ const Dashboard = () => {
     >
       <GlassCard className="mb-8 p-8 text-center">
         <h2 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent tracking-tight mb-2">Dashboard</h2>
-        <p className="text-lg text-gray-700">Welcome back, <span className="font-semibold text-primary-600">{user?.name || 'User'}</span>!</p>
+        <p className="text-lg text-gray-700">Welcome back, <span className="font-semibold text-primary-600">{user?.name || user?.email || 'User'}</span>!</p>
         <div className="mt-6">
           <Link
             to="/prds/new"
@@ -54,7 +51,8 @@ const Dashboard = () => {
         </div>
       </GlassCard>
 
-      {loading ? (
+      {/* Loading/Error State for Dashboard Data - Show if loading OR data is null AND not in error */}
+      {loading || (!dashboardData && !error) ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           <span className="ml-4 text-gray-600">Loading dashboard data...</span>
@@ -68,7 +66,7 @@ const Dashboard = () => {
           </div>
         </GlassCard>
       ) : (
-        <>
+        <> {/* Render dashboard content only when data is loaded and no error */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <GlassCard className="flex items-center p-6">
               <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">

@@ -10,19 +10,17 @@ const navLinks = [
 const Sidebar = () => {
   const location = useLocation()
   return (
-    <aside className="w-56 bg-white border-r border-gray-200 flex flex-col py-6 px-4">
-      <div className="mb-8 flex items-center">
-        <img src="/genprd_logo.png" alt="GenPRD" className="h-8 w-auto mr-2" />
-        <span className="font-bold text-primary-600 text-lg">GenPRD</span>
+    <aside className="w-64 bg-white/60 backdrop-blur-xl backdrop-saturate-150 border-r border-white/40 flex flex-col py-6 px-4 shadow-lg z-20 flex-shrink-0">
+      <div className="mb-8 flex items-center px-4">
+        <img src="/genprd_logo.png" alt="GenPRD" className="h-9 w-auto mr-2" />
+        <span className="font-bold text-primary-700 text-xl">GenPRD</span>
       </div>
       <nav className="flex-1 space-y-2">
         {navLinks.map(link => (
           <Link
             key={link.to}
             to={link.to}
-            className={`flex items-center px-3 py-2 rounded-lg text-gray-700 hover:bg-primary-50 transition ${
-              location.pathname.startsWith(link.to) ? 'bg-primary-100 font-semibold text-primary-700' : ''
-            }`}
+            className={`flex items-center px-4 py-2 rounded-lg text-gray-700 font-medium hover:bg-primary-100 hover:text-primary-800 transition ${location.pathname.startsWith(link.to) ? 'bg-primary-100 text-primary-800 font-semibold' : ''}`}
           >
             {link.icon}
             <span className="ml-3">{link.label}</span>

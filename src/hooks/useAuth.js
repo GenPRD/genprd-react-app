@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useEffect, createContext, useContext, useCallback } from 'react'
 import api from '../utils/api'
 
 // Create Auth Context
@@ -13,74 +13,102 @@ export const useAuth = () => {
   return context
 }
 
-// Auth logic (no JSX here)
+// Auth logic with improved state management
 export const useAuthProvider = () => {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [initialized, setInitialized] = useState(false)
+
+  // Memoized auth check function to prevent unnecessary re-runs
+  const checkAuth = useCallback(() => {
+    const savedToken = localStorage.getItem('jwt_token')
+    const savedUser = localStorage.getItem('user_data')
+    
+    if (savedToken && savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser)
+        setToken(savedToken)
+        setUser(parsedUser)
+        console.log('✅ Auth restored from localStorage:', parsedUser.email)
+      } catch (error) {
+        console.error('❌ Error parsing saved user data:', error)
+        // Clear corrupted data
+        localStorage.removeItem('jwt_token')
+        localStorage.removeItem('refresh_token')
+        localStorage.removeItem('user_data')
+        setUser(null)
+        setToken(null)
+      }
+    } else {
+      setUser(null)
+      setToken(null)
+    }
+    
+    setLoading(false)
+    setInitialized(true)
+  }, [])
 
   // Check for existing token on app load
   useEffect(() => {
-    let didCancel = false
-    const checkAuth = () => {
-      const savedToken = localStorage.getItem('jwt_token')
-      const savedUser = localStorage.getItem('user_data')
-      if (savedToken && savedUser) {
-        try {
-          const parsedUser = JSON.parse(savedUser)
-          if (!didCancel) {
-            setToken(prev => prev !== savedToken ? savedToken : prev)
-            setUser(prev => prev?.email !== parsedUser.email ? parsedUser : prev)
-          }
-        } catch (error) {
-          if (!didCancel) {
-            localStorage.removeItem('jwt_token')
-            localStorage.removeItem('refresh_token')
-            localStorage.removeItem('user_data')
-            setUser(null)
-            setToken(null)
-          }
-        }
-      } else {
-        if (!didCancel) {
-          setUser(null)
-          setToken(null)
-        }
-      }
-      if (!didCancel) setLoading(false)
+    if (!initialized) {
+      checkAuth()
     }
-    checkAuth()
-    return () => { didCancel = true }
-  }, [])
+  }, [checkAuth, initialized])
 
-  // Simplified login function
-  const login = (userData, tokenData) => {
+  // Enhanced login function
+  const login = useCallback((userData, tokenData) => {
+    console.log('🔐 Login called with:', userData.email)
     setUser(userData)
     setToken(tokenData)
-  }
+    setLoading(false)
+    
+    // Ensure localStorage is updated
+    localStorage.setItem('jwt_token', tokenData)
+    localStorage.setItem('user_data', JSON.stringify(userData))
+  }, [])
 
-  const logout = async () => {
+  // Logout function - now only clears state, navigation handled by caller
+  const logout = useCallback(async () => {
+    console.log('🔐 Logout called');
     try {
       await api.post('/auth/logout')
+      console.log('✅ Server logout successful');
     } catch (error) {
+      console.error('❌ Logout API call failed:', error)
       // Continue with local logout even if server call fails
     }
+    
+    // Clear local state and storage
     setUser(null)
     setToken(null)
     localStorage.removeItem('jwt_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user_data')
-    window.location.href = '/'
-  }
+    console.log('✅ Local auth state cleared');
+    // Do NOT navigate here. Navigation will be handled by the component that calls logout.
+    // window.location.href = '/'
+  }, [])
 
-  return {
+  const authValue = {
     user,
     token,
     loading,
     login,
     logout,
-    isAuthenticated: !!token
+    isAuthenticated: !!token && !!user,
+    initialized
   }
+
+  console.log('🔍 Auth state:', {
+    hasUser: !!user,
+    hasToken: !!token,
+    isAuthenticated: authValue.isAuthenticated,
+    loading,
+    initialized
+  })
+
+  return authValue
 }
 
 export { AuthContext }

@@ -16,22 +16,31 @@ export const useApi = () => {
       setError(err.message || 'An error occurred')
       throw err
     } finally {
-      setLoading(false)
+      // Loading is managed by the specific hooks after their state updates
+      // setLoading(false) // Keep this commented out
     }
   }
 
-  return { makeRequest, loading, error, setError }
+  return { makeRequest, loading, error, setError, setLoading, setError }
 }
 
 // Test API endpoint - no auth required
 export const useTestAPI = () => {
-  const { makeRequest, loading, error } = useApi()
+  const { makeRequest, loading, error, setLoading, setError } = useApi()
 
   const testConnection = async () => {
-    return makeRequest(async () => {
-      const response = await api.get('/')
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.get('/')
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in testConnection:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   return { testConnection, loading, error }
@@ -39,38 +48,76 @@ export const useTestAPI = () => {
 
 // Dashboard API calls
 export const useDashboard = () => {
-  const { makeRequest, loading, error } = useApi()
+  const { makeRequest, loading, error, setLoading, setError } = useApi()
+  const [dashboardData, setDashboardData] = useState(null)
+
+  console.log('📊 useDashboard state:', { loading, error, hasData: !!dashboardData })
 
   const getDashboard = async () => {
-    return makeRequest(async () => {
-      const response = await api.get('/dashboard')
-      // Extract the data from the API response structure
-      if (response.data && response.data.data) {
-        return response.data.data // Return just the data object from the response
-      }
-      return {} // Return empty object if the structure is not as expected
-    })
+    console.log('📊 useDashboard: Calling getDashboard...')
+    try {
+      const data = await makeRequest(async () => {
+        console.log('📊 useDashboard: makeRequest: Fetching /dashboard...')
+        const response = await api.get('/dashboard')
+        console.log('📊 useDashboard: makeRequest: Received response:', response.data)
+        if (response.data && response.data.data) {
+          return response.data.data
+        }
+        console.warn('📊 useDashboard: makeRequest: Unexpected response structure', response.data)
+        return {} // Return empty object or handle unexpected structure
+      })
+      console.log('📊 useDashboard: makeRequest resolved with data:', data)
+      setDashboardData(data) // Set data state on success
+      console.log('📊 useDashboard: setDashboardData called')
+      return { status: 'success', data } // Optionally return data structure
+    } catch (err) {
+      // Error was set by makeRequest
+      console.error('❌ Error in getDashboard fetch:', err)
+      setDashboardData(null) // Clear data on error
+      // Re-throw the error so the component can handle it if needed (Dashboard currently does)
+      throw err
+    } finally {
+      console.log('📊 useDashboard: getDashboard finally block reached')
+      setLoading(false)
+      console.log('📊 useDashboard: setLoading(false) called')
+    }
   }
 
-  return { getDashboard, loading, error }
+  return { getDashboard, dashboardData, loading, error }
 }
 
 // User profile API calls
 export const useUserProfile = () => {
-  const { makeRequest, loading, error } = useApi()
+  const { makeRequest, loading, error, setLoading, setError } = useApi()
 
   const getUserProfile = async () => {
-    return makeRequest(async () => {
-      const response = await api.get('/users/profile')
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.get('/users/profile')
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in getUserProfile fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const updateUserProfile = async (profileData) => {
-    return makeRequest(async () => {
-      const response = await api.put('/users/profile', profileData)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.put('/users/profile', profileData)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in updateUserProfile fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   return { getUserProfile, updateUserProfile, loading, error }
@@ -78,41 +125,81 @@ export const useUserProfile = () => {
 
 // Personnel API calls
 export const usePersonnel = () => {
-  const { makeRequest, loading, error } = useApi()
+  const { makeRequest, loading, error, setLoading, setError } = useApi()
 
   const getAllPersonnel = async () => {
-    return makeRequest(async () => {
-      const response = await api.get('/personnel')
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.get('/personnel')
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in getAllPersonnel fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getPersonnelById = async (id) => {
-    return makeRequest(async () => {
-      const response = await api.get(`/personnel/${id}`)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.get(`/personnel/${id}`)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in getPersonnelById fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const createPersonnel = async (personnelData) => {
-    return makeRequest(async () => {
-      const response = await api.post('/personnel', personnelData)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.post('/personnel', personnelData)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in createPersonnel fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const updatePersonnel = async (id, personnelData) => {
-    return makeRequest(async () => {
-      const response = await api.put(`/personnel/${id}`, personnelData)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.put(`/personnel/${id}`, personnelData)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in updatePersonnel fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const deletePersonnel = async (id) => {
-    return makeRequest(async () => {
-      const response = await api.delete(`/personnel/${id}`)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.delete(`/personnel/${id}`)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in deletePersonnel fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   return {
@@ -128,55 +215,111 @@ export const usePersonnel = () => {
 
 // PRD API calls
 export const usePRD = () => {
-  const { makeRequest, loading, error } = useApi()
+  const { makeRequest, loading, error, setLoading, setError } = useApi()
 
   const getAllPRDs = async () => {
-    return makeRequest(async () => {
-      const response = await api.get('/prd')
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.get('/prd')
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in getAllPRDs fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getPRDById = async (id) => {
-    return makeRequest(async () => {
-      const response = await api.get(`/prd/${id}`)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.get(`/prd/${id}`)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in getPRDById fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const createPRD = async (prdData) => {
-    return makeRequest(async () => {
-      const response = await api.post('/prd', prdData)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.post('/prd', prdData)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in createPRD fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const updatePRD = async (id, prdData) => {
-    return makeRequest(async () => {
-      const response = await api.put(`/prd/${id}`, prdData)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.put(`/prd/${id}`, prdData)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in updatePRD fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const deletePRD = async (id) => {
-    return makeRequest(async () => {
-      const response = await api.delete(`/prd/${id}`)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.delete(`/prd/${id}`)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in deletePRD fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const archivePRD = async (id) => {
-    return makeRequest(async () => {
-      const response = await api.put(`/prd/${id}/archive`)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.put(`/prd/${id}/archive`)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in archivePRD fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   const downloadPRD = async (id) => {
-    return makeRequest(async () => {
-      const response = await api.get(`/prd/${id}/download`)
-      return response.data
-    })
+    try {
+      const result = await makeRequest(async () => {
+        const response = await api.get(`/prd/${id}/download`)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in downloadPRD fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
   }
 
   return {

@@ -1,14 +1,23 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 
 const AuthCallback = () => {
   const { login } = useAuth()
+  const hasProcessed = useRef(false)
 
   useEffect(() => {
+    // Prevent double processing in React Strict Mode
+    if (hasProcessed.current) {
+      console.log('🔄 AuthCallback already processed, skipping')
+      return
+    }
+
     console.log('🔥 AuthCallback component mounted!')
     console.log('Current URL:', window.location.href)
     
     const handleAuth = async () => {
+      hasProcessed.current = true
+      
       try {
         console.log('🚀 Starting handleAuth function')
         
@@ -42,17 +51,21 @@ const AuthCallback = () => {
           localStorage.setItem('user_data', JSON.stringify(userData))
           console.log('✅ All auth data stored in localStorage')
           
-          // Update React state
+          // Update React state immediately
           login(userData, token)
           console.log('✅ React auth state updated')
           
-          // Get redirect path and clean up
-          const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
-          localStorage.removeItem('auth_redirect')
-          
-          console.log('🏠 Redirecting to:', redirectPath)
-          // Force a full page reload to ensure React state updates
-          window.location.href = redirectPath
+          // Small delay to ensure state is propagated
+          setTimeout(() => {
+            // Get redirect path and clean up
+            const redirectPath = localStorage.getItem('auth_redirect') || '/dashboard'
+            localStorage.removeItem('auth_redirect')
+            
+            console.log('🏠 Redirecting to:', redirectPath)
+            
+            // Use React Router navigation instead of window.location
+            window.location.replace(redirectPath)
+          }, 100)
           
         } catch (parseError) {
           console.error('❌ Error parsing user data:', parseError)

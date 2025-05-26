@@ -2,12 +2,10 @@ import { useAuth } from '../../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
 
 const PublicRoute = ({ children, redirectTo = '/dashboard' }) => {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, initialized } = useAuth()
 
-  // Also check localStorage as fallback
-  const hasStoredAuth = localStorage.getItem('jwt_token') && localStorage.getItem('user_data')
-
-  if (loading) {
+  // Wait for auth to be initialized before making decisions
+  if (!initialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -19,7 +17,13 @@ const PublicRoute = ({ children, redirectTo = '/dashboard' }) => {
   }
 
   // If user is authenticated, redirect them away from public routes like login
-  return (isAuthenticated || hasStoredAuth) ? <Navigate to={redirectTo} replace /> : children
+  if (isAuthenticated) {
+    console.log('✅ User authenticated, redirecting from public route to:', redirectTo)
+    return <Navigate to={redirectTo} replace />
+  }
+
+  // Not authenticated, show public content
+  return children
 }
 
-export default PublicRoute
+export default PublicRoute  
