@@ -1,427 +1,312 @@
-import { useEffect, useRef } from 'react'
-import { Link as RouterLink } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
-import { useTestAPI } from '../hooks/useApi'
-import { motion, useScroll, useTransform, useInView } from 'framer-motion'
+import { useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import { useTestAPI } from '../hooks/useApi';
+import { Button } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+
+// Import komponen layout yang esensial
+import Header from '../components/layout/Header';
+import Footer from '../components/layout/Footer';
+
+// Import icons
 import { 
-  FiFileText, FiUsers, FiZap, FiCheckCircle, FiArrowRight, 
-  FiEdit, FiDownload, FiCloud, FiSettings, FiLayers,
-  FiStar, FiTrendingUp, FiShield, FiClock
-} from 'react-icons/fi'
-
-// Enhanced GlassCard with better glassmorphism
-const GlassCard = ({ children, className = '', variant = 'default', ...props }) => {
-  const variants = {
-    default: 'bg-white/10 backdrop-blur-xl border border-white/20',
-    elevated: 'bg-white/15 backdrop-blur-2xl border border-white/30 shadow-2xl',
-    subtle: 'bg-white/5 backdrop-blur-lg border border-white/10',
-    feature: 'bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-xl border border-white/20 hover:from-white/25 hover:to-white/10'
-  }
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      whileHover={{ y: -5, scale: 1.02 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className={`${variants[variant]} rounded-3xl backdrop-saturate-150 hover:shadow-2xl transition-all duration-500 ${className}`}
-      {...props}
-    >
-      {children}
-    </motion.div>
-  )
-}
-
-// Floating particles background
-const FloatingParticles = () => {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(20)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-2 h-2 bg-primary-400/20 rounded-full"
-          initial={{
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            x: [0, Math.random() * 20 - 10, 0],
-            opacity: [0.2, 0.5, 0.2],
-          }}
-          transition={{
-            duration: 3 + Math.random() * 2,
-            repeat: Infinity,
-            delay: Math.random() * 2,
-          }}
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
-// Enhanced Hero section with parallax
-const HeroSection = ({ isAuthenticated }) => {
-  const ref = useRef(null)
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"]
-  })
-  
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"])
-  const opacity = useTransform(scrollYProgress, [0, 1], [1, 0])
-
-  return (
-    <motion.section 
-      ref={ref}
-      style={{ y, opacity }}
-      className="relative min-h-screen flex flex-col justify-center items-center text-center px-4 overflow-hidden"
-    >
-      {/* Background gradient mesh */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50/50 via-purple-50/30 to-blue-50/50" />
-      <FloatingParticles />
-      
-      {/* Main hero content */}
-      <div className="relative z-10 max-w-6xl mx-auto">
-        <GlassCard variant="elevated" className="p-12 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-primary-100/80 to-purple-100/80 backdrop-blur-sm border border-white/30 mb-6">
-              <FiStar className="w-4 h-4 text-primary-600 mr-2" />
-              <span className="text-sm font-medium text-primary-700">AI-Powered Documentation</span>
-            </div>
-            
-            <h1 className="text-5xl sm:text-7xl font-black mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-primary-600 via-purple-600 to-blue-600 bg-clip-text text-transparent drop-shadow-sm">
-                Create Perfect
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-blue-600 via-primary-600 to-purple-600 bg-clip-text text-transparent">
-                PRDs in Seconds
-              </span>
-            </h1>
-            
-            <p className="text-xl sm:text-2xl text-gray-700/90 mb-8 leading-relaxed max-w-3xl mx-auto">
-              Transform your ideas into comprehensive Product Requirements Documents with 
-              <span className="font-semibold text-primary-700"> AI precision</span> and 
-              <span className="font-semibold text-purple-700"> professional quality</span>.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <RouterLink
-                to={isAuthenticated ? "/prds/new" : "/login"}
-                className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary-600 to-blue-600 text-white font-semibold rounded-2xl shadow-2xl hover:shadow-primary-500/25 transition-all duration-300 transform hover:scale-105"
-              >
-                <span className="relative z-10">Start Creating</span>
-                <FiArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </RouterLink>
-              
-              <button className="group inline-flex items-center px-8 py-4 bg-white/20 backdrop-blur-xl border border-white/30 text-gray-700 font-semibold rounded-2xl hover:bg-white/30 transition-all duration-300">
-                <FiZap className="mr-2 h-5 w-5" />
-                Watch Demo
-              </button>
-            </div>
-          </motion.div>
-        </GlassCard>
-        
-        {/* Stats section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-6"
-        >
-          {[
-            { label: 'PRDs Generated', value: '10K+', icon: FiFileText },
-            { label: 'Time Saved', value: '85%', icon: FiClock },
-            { label: 'User Satisfaction', value: '98%', icon: FiStar },
-            { label: 'Active Teams', value: '500+', icon: FiUsers }
-          ].map((stat, idx) => (
-            <GlassCard key={stat.label} variant="subtle" className="p-4 text-center">
-              <stat.icon className="h-6 w-6 text-primary-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-              <div className="text-sm text-gray-600">{stat.label}</div>
-            </GlassCard>
-          ))}
-        </motion.div>
-      </div>
-    </motion.section>
-  )
-}
-
-// Enhanced Features section
-const FeaturesSection = () => {
-  const features = [
-    {
-      icon: FiFileText,
-      title: "Smart Input Interface",
-      description: "Intelligent forms that guide you through every step of PRD creation with contextual suggestions.",
-      color: "from-blue-500 to-primary-600"
-    },
-    {
-      icon: FiZap,
-      title: "AI-Powered Generation",
-      description: "Advanced LLM technology creates comprehensive, industry-standard PRDs in seconds.",
-      color: "from-purple-500 to-pink-600"
-    },
-    {
-      icon: FiEdit,
-      title: "Real-time Collaboration",
-      description: "Edit, review, and refine your PRDs with real-time collaboration features.",
-      color: "from-green-500 to-teal-600"
-    },
-    {
-      icon: FiDownload,
-      title: "Multi-format Export",
-      description: "Export as PDF, Word, or Markdown with professional templates and styling.",
-      color: "from-orange-500 to-red-600"
-    },
-    {
-      icon: FiShield,
-      title: "Enterprise Security",
-      description: "Bank-level security with SOC 2 compliance and enterprise-grade data protection.",
-      color: "from-indigo-500 to-blue-600"
-    },
-    {
-      icon: FiTrendingUp,
-      title: "Analytics & Insights",
-      description: "Track PRD performance, team productivity, and project success metrics.",
-      color: "from-cyan-500 to-blue-600"
-    }
-  ]
-
-  return (
-    <section className="py-24 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary-50/30 to-transparent" />
-      
-      <div className="relative max-w-7xl mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl sm:text-5xl font-black text-gray-900 mb-4">
-            Powerful Features for
-            <span className="block bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">
-              Modern Teams
-            </span>
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Everything you need to create, collaborate, and deliver exceptional product documentation.
-          </p>
-        </motion.div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, idx) => (
-            <GlassCard 
-              key={feature.title} 
-              variant="feature" 
-              className="p-8 group"
-            >
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${feature.color} p-4 mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                <feature.icon className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
-              <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-            </GlassCard>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// Enhanced Workflow section
-const WorkflowSection = () => {
-  const workflow = [
-    { 
-      icon: FiLayers, 
-      label: 'Input Project Details', 
-      description: 'Fill structured forms with smart suggestions',
-      color: 'from-blue-500 to-primary-600'
-    },
-    { 
-      icon: FiZap, 
-      label: 'AI Generation', 
-      description: 'LLM processes and creates comprehensive PRD',
-      color: 'from-purple-500 to-pink-600'
-    },
-    { 
-      icon: FiEdit, 
-      label: 'Review & Refine', 
-      description: 'Collaborate and perfect your documentation',
-      color: 'from-green-500 to-teal-600'
-    },
-    { 
-      icon: FiDownload, 
-      label: 'Export & Share', 
-      description: 'Download professional PDFs and share with team',
-      color: 'from-orange-500 to-red-600'
-    }
-  ]
-
-  return (
-    <section className="py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-primary-50/50 to-purple-50/50" />
-      
-      <div className="relative max-w-6xl mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-4xl sm:text-5xl font-black text-gray-900 mb-4">
-            Simple 4-Step Process
-          </h2>
-          <p className="text-xl text-gray-600">
-            From idea to professional PRD in minutes, not hours.
-          </p>
-        </motion.div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {workflow.map((step, idx) => (
-            <motion.div
-              key={step.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
-              className="relative"
-            >
-              <GlassCard variant="elevated" className="p-8 text-center h-full">
-                <div className="relative mb-6">
-                  <div className={`w-20 h-20 rounded-full bg-gradient-to-r ${step.color} p-5 mx-auto mb-4 shadow-lg`}>
-                    <step.icon className="h-10 w-10 text-white" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center text-sm font-bold text-gray-700 shadow-lg">
-                    {idx + 1}
-                  </div>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{step.label}</h3>
-                <p className="text-gray-600 text-sm">{step.description}</p>
-              </GlassCard>
-              
-              {idx < workflow.length - 1 && (
-                <div className="hidden lg:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-primary-300 to-purple-300 transform -translate-y-1/2" />
-              )}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
+  FiDatabase, 
+  FiUsers, 
+  FiClipboard, 
+  FiLayers,
+  FiArrowRight
+} from 'react-icons/fi';
 
 const Homepage = () => {
-  const { user, isAuthenticated, logout } = useAuth()
-  const { testConnection } = useTestAPI()
+  const { isAuthenticated } = useAuth();
+  const { testConnection } = useTestAPI();
 
   useEffect(() => {
     testConnection().then(
       () => console.log('API Connected'),
       (error) => console.log('API Offline', error)
-    )
-  }, [testConnection])
+    );
+  }, [testConnection]);
+
+  // Fitur untuk ditampilkan
+  const features = [
+    {
+      icon: <FiClipboard size={24} className="text-gray-900" />,
+      title: 'AI-Powered PRD Creation',
+      description: 'Generate professional PRDs in minutes with our AI assistant that guides you through the entire process.'
+    },
+    {
+      icon: <FiUsers size={24} className="text-gray-900" />,
+      title: 'Team Collaboration',
+      description: 'Invite your team members, assign roles, and collaborate seamlessly on product requirements.'
+    },
+    {
+      icon: <FiDatabase size={24} className="text-gray-900" />,
+      title: 'Centralized Repository',
+      description: 'Store all your product requirements in one place with powerful search and organization tools.'
+    },
+    {
+      icon: <FiLayers size={24} className="text-gray-900" />,
+      title: 'Version Control',
+      description: 'Track changes, review revisions, and maintain a clear history of your product documentation.'
+    }
+  ];
+
+  // Langkah-langkah workflow
+  const workflowSteps = [
+    {
+      number: '01',
+      title: 'Define your product',
+      description: 'Start with basic information and let our AI guide you through defining your product vision.'
+    },
+    {
+      number: '02',
+      title: 'Specify requirements',
+      description: 'Break down features, user stories, and technical specifications with intelligent suggestions.'
+    },
+    {
+      number: '03',
+      title: 'Collaborate & refine',
+      description: 'Get feedback from stakeholders and iterate on your requirements in real-time.'
+    },
+    {
+      number: '04',
+      title: 'Export & share',
+      description: 'Publish your finalized PRD in multiple formats ready for your development team.'
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-primary-50/30 to-purple-50/30 relative overflow-hidden">
-      {/* Enhanced Header */}
-      <motion.header 
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-primary-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <FiFileText className="h-6 w-6 text-white" />
+    <div className="min-h-screen bg-white">
+      <Header />
+
+      {/* Hero Section - Lebih Minimalis */}
+      <div className="pt-28 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-medium text-gray-900 mb-4">
+                Create Better PRDs with AI Assistance
+              </h1>
+              <p className="text-lg text-gray-600 mb-8">
+                Streamline your product development with intelligent requirements documentation
+              </p>
+              <div className="flex flex-wrap gap-4">
+                {isAuthenticated ? (
+                  <Button 
+                    variant="contained"
+                    component={RouterLink}
+                    to="/dashboard"
+                    sx={{ 
+                      backgroundColor: '#1a1a1a', 
+                      '&:hover': { backgroundColor: '#2c2c2c' },
+                      borderRadius: '4px',
+                      boxShadow: 'none',
+                      textTransform: 'none',
+                      py: 1.5,
+                      px: 3
+                    }}
+                  >
+                    Go to Dashboard
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="contained" 
+                    component={RouterLink}
+                    to="/login"
+                    endIcon={<FiArrowRight />}
+                    sx={{ 
+                      backgroundColor: '#1a1a1a', 
+                      '&:hover': { backgroundColor: '#2c2c2c' },
+                      borderRadius: '4px',
+                      boxShadow: 'none',
+                      textTransform: 'none',
+                      py: 1.5,
+                      px: 3
+                    }}
+                  >
+                    Get Started
+                  </Button>
+                )}
+                <Button 
+                  variant="outlined" 
+                  component={RouterLink}
+                  to="#features"
+                  sx={{ 
+                    borderColor: '#e0e0e0',
+                    color: '#1a1a1a',
+                    '&:hover': { borderColor: '#1a1a1a', backgroundColor: 'transparent' },
+                    borderRadius: '4px',
+                    textTransform: 'none',
+                    boxShadow: 'none',
+                    py: 1.5,
+                    px: 3
+                  }}
+                >
+                  Learn More
+                </Button>
+              </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">
-              GenPRD
-            </h1>
+            <div className="flex justify-center">
+              <div className="w-full max-w-md rounded-md overflow-hidden border border-gray-200 shadow-sm">
+                {/* Browser Bar */}
+                <div className="bg-gray-100 px-4 py-2 border-b border-gray-200 flex items-center">
+                  <div className="flex space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                  </div>
+                  <div className="mx-auto px-16 py-1 bg-white rounded text-xs text-gray-500 text-center">
+                    app.genprd.com
+                  </div>
+                </div>
+                
+                {/* App Mockup */}
+                <div className="bg-white">
+                  {/* Top Nav */}
+                  <div className="bg-gray-50 border-b border-gray-200 px-4 py-2 flex justify-between items-center">
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 bg-gray-900 rounded-sm mr-2"></div>
+                      <span className="text-xs font-medium">GenPRD</span>
+                    </div>
+                    <div className="w-6 h-6 bg-gray-100 rounded-full"></div>
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="p-4">
+                    <div className="mb-4">
+                      <div className="h-4 bg-gray-100 w-1/2 rounded mb-2"></div>
+                      <div className="h-3 bg-gray-50 w-3/4 rounded"></div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div className="h-16 bg-gray-50 rounded p-2">
+                        <div className="h-2 bg-gray-100 w-1/2 rounded mb-2"></div>
+                        <div className="h-2 bg-gray-100 w-3/4 rounded"></div>
+                      </div>
+                      <div className="h-16 bg-gray-50 rounded p-2">
+                        <div className="h-2 bg-gray-100 w-1/2 rounded mb-2"></div>
+                        <div className="h-2 bg-gray-100 w-3/4 rounded"></div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 rounded-md p-3">
+                      <div className="h-2 bg-gray-100 w-1/3 rounded mb-3"></div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="h-2 bg-gray-100 w-1/4 rounded"></div>
+                        <div className="h-2 bg-gray-100 w-1/4 rounded"></div>
+                        <div className="h-2 bg-gray-100 w-1/4 rounded"></div>
+                      </div>
+                      <div className="h-1 bg-gray-200 w-full rounded-full my-2"></div>
+                      <div className="flex items-center justify-between">
+                        <div className="h-2 bg-gray-100 w-1/5 rounded"></div>
+                        <div className="h-2 bg-gray-100 w-1/6 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr className="border-t border-gray-100" />
+
+      {/* Features Section - Lebih Minimalis */}
+      <div id="features" className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="max-w-xl mx-auto text-center mb-12">
+            <span className="text-xs font-medium tracking-wider text-gray-500 uppercase">Features</span>
+            <h2 className="mt-2 text-2xl sm:text-3xl font-medium text-gray-900">
+              Everything you need for better PRDs
+            </h2>
+            <p className="mt-3 text-gray-600">
+              Our platform combines AI assistance with collaboration tools to help you create comprehensive 
+              product requirements documents faster than ever.
+            </p>
           </div>
           
-          {isAuthenticated ? (
-            <div className="flex items-center space-x-4">
-              <span className="hidden sm:block font-medium text-gray-700">
-                Welcome, {user?.name}
-              </span>
-              <button 
-                onClick={logout} 
-                className="px-6 py-2 rounded-xl bg-white/60 backdrop-blur border border-white/30 text-gray-700 hover:bg-white/80 font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <RouterLink 
-              to="/login" 
-              className="px-6 py-2 bg-gradient-to-r from-primary-600 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-            >
-              Login
-            </RouterLink>
-          )}
-        </div>
-      </motion.header>
-
-      {/* Main Content */}
-      <main className="pt-20">
-        <HeroSection isAuthenticated={isAuthenticated} />
-        <FeaturesSection />
-        <WorkflowSection />
-        
-        {/* CTA Section */}
-        <section className="py-24 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 to-purple-600/10" />
-          <div className="relative max-w-4xl mx-auto px-4 text-center">
-            <GlassCard variant="elevated" className="p-12">
-              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">
-                Ready to Transform Your Documentation?
-              </h2>
-              <p className="text-xl text-gray-600 mb-8">
-                Join thousands of teams already using GenPRD to create better product requirements.
-              </p>
-              <RouterLink
-                to={isAuthenticated ? "/prds/new" : "/login"}
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary-600 to-purple-600 text-white font-semibold rounded-2xl shadow-2xl hover:shadow-primary-500/25 transition-all duration-300 transform hover:scale-105"
-              >
-                Get Started Free
-                <FiArrowRight className="ml-2 h-5 w-5" />
-              </RouterLink>
-            </GlassCard>
-          </div>
-        </section>
-      </main>
-
-      {/* Enhanced Footer */}
-      <footer className="relative py-12 bg-gradient-to-r from-gray-50/80 to-primary-50/80 backdrop-blur-xl border-t border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <FiFileText className="h-4 w-4 text-white" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {features.map((feature, index) => (
+              <div key={index} className="bg-white border border-gray-100 rounded-lg p-6">
+                <div className="mb-4">
+                  {feature.icon}
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  {feature.description}
+                </p>
               </div>
-              <span className="text-xl font-black text-gray-900">GenPRD</span>
-            </div>
-            <p className="text-gray-600 mb-2">Transformative Horizons</p>
-            <p className="text-sm text-gray-500 mb-4">Bridging Mind, Building Futures</p>
-            <p className="text-xs text-gray-400">© 2025 GenPRD. All rights reserved.</p>
+            ))}
           </div>
         </div>
-      </footer>
-    </div>
-  )
-}
+      </div>
 
-export default Homepage
+      {/* Workflow Section - Lebih Minimalis */}
+      <div className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="max-w-xl mx-auto text-center mb-12">
+            <span className="text-xs font-medium tracking-wider text-gray-500 uppercase">Workflow</span>
+            <h2 className="mt-2 text-2xl sm:text-3xl font-medium text-gray-900">
+              Simple 4-step process
+            </h2>
+            <p className="mt-3 text-gray-600">
+              We've simplified the PRD creation process to help you create professional documentation quickly.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {workflowSteps.map((step, index) => (
+              <div key={index} className="border-t-2 border-gray-900 pt-6">
+                <span className="text-sm text-gray-500 mb-2 block">{step.number}</span>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section - Lebih Minimalis */}
+      <div className="py-16 bg-gray-900 text-white">
+        <div className="max-w-xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-2xl sm:text-3xl font-medium mb-4">
+            Ready to create better PRDs?
+          </h2>
+          <p className="mb-8 text-gray-300">
+            Join thousands of product teams who use GenPRD to streamline their product development process
+          </p>
+          
+          <Button 
+            variant="contained" 
+            component={RouterLink}
+            to={isAuthenticated ? "/dashboard" : "/login"}
+            sx={{ 
+              backgroundColor: 'white', 
+              color: '#1a1a1a',
+              '&:hover': { backgroundColor: '#f5f5f5' },
+              borderRadius: '4px',
+              boxShadow: 'none',
+              textTransform: 'none',
+              py: 1.5,
+              px: 4
+            }}
+          >
+            {isAuthenticated ? "Go to Dashboard" : "Get Started for Free"}
+          </Button>
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+  );
+};
+
+export default Homepage;

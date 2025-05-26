@@ -3,11 +3,9 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { FiMail, FiLock, FiArrowLeft } from 'react-icons/fi'
 import { FcGoogle } from 'react-icons/fc'
-import { motion } from 'framer-motion'
-import AuthGlassCard from '../components/auth/AuthGlassCard'
+import { Button } from '@mui/material'
 
-const bgUrl = '/login_bg.jpg'
-
+// Simplified login page without glassmorphism effects
 const Login = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -61,40 +59,55 @@ const Login = () => {
   const redirectMessage = searchParams.get('redirect') ? 'Please log in to access this page.' : null
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-primary-50 to-primary-100">
-      {/* Background image with overlay */}
-      <img
-        src={bgUrl}
-        alt="AI background"
-        className="absolute inset-0 w-full h-full object-cover object-left opacity-80 select-none pointer-events-none z-0"
-        draggable="false"
-      />
-      <div className="absolute inset-0 bg-gradient-to-br from-white/90 via-primary-50/90 to-primary-100/95 z-10 backdrop-blur-md" />
-      <main className="relative z-20 flex flex-col items-center justify-center w-full min-h-screen px-4">
-        <AuthGlassCard>
-          <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent tracking-tight mb-2 text-center select-none">
-            GenPRD
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md px-4">
+        <div className="bg-white border border-gray-100 rounded-lg shadow-sm p-8">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center mr-2">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <span className="text-xl font-medium text-gray-900">GenPRD</span>
+          </div>
+
+          <h1 className="text-2xl font-medium text-gray-900 mb-2 text-center">
+            Sign in to your account
           </h1>
-          <p className="text-lg text-gray-700 mb-6 text-center">Sign in to your account to continue</p>
+          <p className="text-gray-600 mb-6 text-center text-sm">
+            Access your PRDs and workspace
+          </p>
 
           {redirectMessage && (
-            <div className="mb-4 w-full p-3 bg-blue-50 border border-blue-200 rounded-md text-blue-700 text-sm text-center">
+            <div className="mb-4 w-full p-3 bg-blue-50 border border-blue-100 rounded-md text-blue-700 text-sm">
               {redirectMessage}
             </div>
           )}
+          
           {error && (
-            <div className="mb-4 w-full p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm text-center">
+            <div className="mb-4 w-full p-3 bg-red-50 border border-red-100 rounded-md text-red-700 text-sm">
               {error}
             </div>
           )}
 
           {/* Google Login */}
-          <button
+          <Button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center px-4 py-3 rounded-lg shadow bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base transition mb-4"
+            variant="contained"
+            fullWidth
+            startIcon={<FcGoogle />}
+            sx={{ 
+              backgroundColor: '#1a1a1a', 
+              '&:hover': { backgroundColor: '#2c2c2c' },
+              borderRadius: '4px',
+              boxShadow: 'none',
+              textTransform: 'none',
+              py: 1.5,
+              mb: 3
+            }}
           >
-            <FcGoogle className="w-5 h-5 mr-2" /> Continue with Google
-          </button>
+            Continue with Google
+          </Button>
 
           <div className="flex items-center w-full my-4">
             <div className="flex-1 h-px bg-gray-200" />
@@ -105,7 +118,9 @@ const Login = () => {
           {/* Mock Email/Password Login */}
           <form onSubmit={handleEmailLogin} className="w-full space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                   <FiMail className="w-5 h-5" />
@@ -117,13 +132,15 @@ const Login = () => {
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 rounded-lg border border-white/40 bg-white/90 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 text-gray-700 placeholder-gray-400 shadow-sm"
+                  className="block w-full pl-10 pr-3 py-2 rounded-md border border-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 text-gray-700"
                   placeholder="you@email.com"
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                   <FiLock className="w-5 h-5" />
@@ -135,29 +152,40 @@ const Login = () => {
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 rounded-lg border border-white/40 bg-white/90 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-500 text-gray-700 placeholder-gray-400 shadow-sm"
+                  className="block w-full pl-10 pr-3 py-2 rounded-md border border-gray-200 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 text-gray-700"
                   placeholder="Password"
                 />
               </div>
             </div>
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center px-4 py-3 rounded-lg shadow bg-primary-600 hover:bg-primary-700 text-white font-semibold text-base transition disabled:opacity-60 disabled:cursor-not-allowed"
+              variant="outlined"
+              fullWidth
+              sx={{ 
+                borderColor: '#e0e0e0',
+                color: '#1a1a1a',
+                '&:hover': { borderColor: '#1a1a1a', backgroundColor: 'transparent' },
+                borderRadius: '4px',
+                textTransform: 'none',
+                boxShadow: 'none',
+                py: 1.5,
+                mt: 1
+              }}
             >
               {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
+            </Button>
           </form>
 
           <p className="mt-6 text-sm text-gray-500 text-center">
-            <RouterLink to="/" className="text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center">
+            <RouterLink to="/" className="text-gray-900 hover:text-gray-700 inline-flex items-center">
               <FiArrowLeft className="mr-1" /> Back to homepage
             </RouterLink>
           </p>
-        </AuthGlassCard>
-      </main>
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;
