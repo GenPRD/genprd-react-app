@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BellIcon, QuestionMarkCircleIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -7,6 +7,24 @@ const Navbar = ({ showMobileMenu = false, onMobileMenuClick = () => {} }) => {
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const location = useLocation();
+
+  // Helper to get PRD name from location state (if passed) or fallback
+  let pageTitle = 'Dashboard';
+  if (location.pathname.startsWith('/prds/')) {
+    if (location.pathname === '/prds/new') {
+      pageTitle = 'Create PRD';
+    } else if (/^\/prds\/[\w-]+$/.test(location.pathname)) {
+      // Try to get PRD name from location state (if navigated from list)
+      pageTitle = location.state?.prdName || 'PRD Detail';
+    } else {
+      pageTitle = 'PRDs';
+    }
+  } else if (location.pathname.startsWith('/personnel')) {
+    pageTitle = 'Personnel';
+  } else if (location.pathname.startsWith('/dashboard')) {
+    pageTitle = 'Dashboard';
+  }
 
   // Handle outside clicks
   useEffect(() => {
@@ -54,12 +72,7 @@ const Navbar = ({ showMobileMenu = false, onMobileMenuClick = () => {} }) => {
             </button>
           )}
           
-          <h1 className="text-xl font-semibold text-gray-900">
-            {window.location.pathname.split('/').pop() === ''
-              ? 'Dashboard'
-              : window.location.pathname.split('/').pop().charAt(0).toUpperCase() +
-                window.location.pathname.split('/').pop().slice(1)}
-          </h1>
+          <h1 className="text-xl font-semibold text-gray-900">{pageTitle}</h1>
         </div>
 
         <div className="flex items-center space-x-4">

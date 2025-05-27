@@ -68,7 +68,7 @@ const AuthenticatedLayout = ({ children }) => {
         
         {/* Page content */}
         <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-8 relative" style={{ zIndex: 10 }}>
-          <div className="w-full max-w-5xl mx-auto pb-20">
+          <div className="w-full max-w-6xl mx-auto pb-20">
             {children}
           </div>
         </main>

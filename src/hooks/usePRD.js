@@ -12,7 +12,9 @@ export const usePRD = () => {
       const result = await requestFn()
       return result
     } catch (err) {
-      setError(err.message || 'An error occurred')
+      if (err.name !== 'AbortError') {
+        setError(err.message || 'An error occurred')
+      }
       throw err
     } finally {
       setLoading(false)
@@ -26,9 +28,9 @@ export const usePRD = () => {
     })
   }
 
-  const getPRDById = async (id) => {
+  const getPRDById = async (id, config = {}) => {
     return makeRequest(async () => {
-      const response = await api.get(`/prd/${id}`)
+      const response = await api.get(`/prd/${id}`, config)
       return response.data
     })
   }
@@ -56,7 +58,7 @@ export const usePRD = () => {
 
   const archivePRD = async (id) => {
     return makeRequest(async () => {
-      const response = await api.put(`/prd/${id}/archive`)
+      const response = await api.patch(`/prd/${id}/archive`)
       return response.data
     })
   }
