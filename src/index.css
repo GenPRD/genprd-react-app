@@ -41,10 +41,143 @@ body {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 50 !important;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+}
+
+.modal-container {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
 }
 
 .modal-content {
-  z-index: 51 !important;
+  background-color: white;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 32rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  margin: 2rem;
+}
+
+/* Override z-index for all layout elements */
+header, aside, main, nav {
+  z-index: 1 !important;
+}
+
+/* Allow modal blur to show through */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Fix stacking context for layout components */
+header, nav, aside, main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Fix body scroll issues */
+body.modal-open {
+  overflow: hidden !important;
+  width: 100%;
+  height: 100%;
+}
+
+/* Tambahkan di bagian akhir file */
+
+/* Z-index hierarchy global */
+:root {
+  --z-modal-backdrop: 100000;
+  --z-modal-content: 100001;
+  --z-navbar: 30;
+  --z-sidebar: 20;
+  --z-content: 10;
+}
+
+/* Reset stacking context untuk layout elements */
+.app-wrapper {
+  z-index: auto !important;
+  position: relative;
+}
+
+/* Jaga elemen penting tetap terlihat */
+.navbar, header, nav {
+  z-index: var(--z-navbar) !important;
+}
+
+.sidebar, aside {
+  z-index: var(--z-sidebar) !important;
+}
+
+main, .main-content {
+  z-index: var(--z-content) !important;
+}
+
+/* Portal styling */
+#modal-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--z-modal-backdrop);
+  height: 0;
+}
+
+/* Body styling when modal is open */
+body.overflow-hidden {
+  overflow: hidden !important;
+  padding-right: 15px; /* Prevent layout shift when scrollbar disappears */
+}
+
+/* Make backdrop blur work on all browsers */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Add to your global CSS file */
+
+/* Sidebar animation */
+.sidebar-enter {
+  transform: translateX(-100%);
+}
+.sidebar-enter-active {
+  transform: translateX(0);
+  transition: transform 200ms;
+}
+.sidebar-exit {
+  transform: translateX(0);
+}
+.sidebar-exit-active {
+  transform: translateX(-100%);
+  transition: transform 200ms;
+}
+
+/* Prevent scroll when sidebar is open on mobile */
+body.sidebar-open {
+  overflow: hidden;
+}
+
+/* For mobile responsiveness */
+@media (max-width: 768px) {
+  .main-content {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .content-container {
+    padding: 1rem;
+  }
+  
+  /* Adjust spacing on smaller screens */
+  .px-6 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }

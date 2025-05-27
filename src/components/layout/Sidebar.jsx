@@ -15,7 +15,7 @@ const navLinks = [
   { to: '/personnel', label: 'Personnel', icon: <UserGroupIcon className="w-5 h-5" /> },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
   const location = useLocation();
   const { dashboardData, getDashboard } = useDashboard();
   const [isLoading, setIsLoading] = useState(true);
@@ -48,9 +48,16 @@ const Sidebar = () => {
     }
     return location.pathname.startsWith(path);
   };
+  
+  // Handle navigation click for mobile view
+  const handleNavClick = (e) => {
+    if (isMobile) {
+      onCloseMobile();
+    }
+  };
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-300 flex flex-col py-6 flex-shrink-0 hidden md:flex sticky top-0 h-screen">
+    <aside className="w-64 bg-white border-r border-gray-300 flex flex-col py-6 flex-shrink-0 h-full">
       <div className="mb-8 flex items-center px-6">
         <div className="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center mr-2">
           <FiFileText className="h-4 w-4 text-white" />
@@ -69,6 +76,7 @@ const Sidebar = () => {
                 ? 'bg-gray-100 text-gray-900 font-medium' 
                 : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
             }`}
+            onClick={handleNavClick}
           >
             <span className="text-gray-500 mr-3">{link.icon}</span>
             <span>{link.label}</span>
@@ -80,6 +88,7 @@ const Sidebar = () => {
           <Link
             to="/prds/new"
             className="flex items-center w-full px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors"
+            onClick={handleNavClick}
           >
             <PlusIcon className="w-5 h-5 mr-2" />
             New PRD
@@ -108,6 +117,7 @@ const Sidebar = () => {
                     key={prd.id}
                     to={`/prds/${prd.id}`}
                     className="block px-4 py-2 hover:bg-gray-50 rounded-md"
+                    onClick={handleNavClick}
                   >
                     <span className="block text-sm font-medium truncate text-gray-900">
                       {prd.product_name}
@@ -134,11 +144,6 @@ const Sidebar = () => {
             </>
           )}
         </div>
-      </div>
-      
-      {/* Simplified Footer */}
-      <div className="mt-auto pt-4">
-        {/* Intentionally left blank as requested */}
       </div>
     </aside>
   );
