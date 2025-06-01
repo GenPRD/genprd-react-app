@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'; 
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useAuth } from '../../hooks/useAuth';
@@ -7,69 +8,90 @@ import { useAuth } from '../../hooks/useAuth';
 const AuthenticatedLayout = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Close sidebar when clicking outside on mobile
+  const handleOverlayClick = () => {
+    setSidebarOpen(false);
+  };
 
   // Don't render if user is not authenticated or user data is missing
-  if (!isAuthenticated || !user) {
+  if (!isAuthenticated || !user || !mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Loading your workspace...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
-
-      {/* Mobile Sidebar */}
-      <div 
-        className={`fixed inset-y-0 left-0 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:hidden transition duration-200 ease-in-out z-50 w-64`}
-      >
-        <div className="h-full flex flex-col bg-white border-r border-gray-200">
-          {/* Close button */}
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
-            <button 
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <span className="sr-only">Close sidebar</span>
-              <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
-            </button>
-          </div>
-          
-          {/* Mobile Sidebar Content */}
-          <Sidebar isMobile={true} onCloseMobile={() => setSidebarOpen(false)} />
-        </div>
-      </div>
-
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block md:relative" style={{ zIndex: 20 }}>
+      <div className="hidden md:block md:w-64 flex-shrink-0 border-r border-gray-100">
         <Sidebar />
       </div>
-      
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col min-h-screen">
-        {/* Navbar with hamburger for mobile */}
-        <div style={{ zIndex: 30 }} className="relative">
-          <Navbar 
-            showMobileMenu={true} 
-            onMobileMenuClick={() => setSidebarOpen(true)} 
+
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 bg-gray-600 bg-opacity-50 z-40"
+            onClick={handleOverlayClick}
           />
-        </div>
-        
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-8 relative" style={{ zIndex: 10 }}>
-          <div className="w-full max-w-6xl mx-auto pb-20">
-            {children}
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ x: -320 }}
+            animate={{ x: 0 }}
+            exit={{ x: -320 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="md:hidden fixed inset-y-0 left-0 w-64 bg-white z-50 border-r border-gray-100 shadow-lg"
+          >
+            <div className="absolute top-0 right-0 pt-4 pr-4">
+              <button
+                className="text-gray-500 hover:text-gray-900"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <Sidebar isMobile={true} onCloseMobile={() => setSidebarOpen(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar
+          showMobileMenu={true}
+          onMobileMenuClick={() => setSidebarOpen(true)}
+        />
+
+        {/* Main content with scrolling */}
+        <main className="flex-1 overflow-y-auto bg-gray-50 py-6">
+          <div className="max-w-7xl mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              {children}
+            </motion.div>
           </div>
         </main>
       </div>

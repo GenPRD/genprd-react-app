@@ -1,9 +1,8 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
 
-const AnimatedBackground = () => {
+const AnimatedBackground = ({ className = "" }) => {
   return (
-    <div className="absolute inset-0 -z-10 overflow-hidden">
+    <div className={`absolute inset-0 -z-10 overflow-hidden ${className}`}>
       {/* Simple gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-gray-50"></div>
       

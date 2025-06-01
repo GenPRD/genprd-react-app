@@ -1,46 +1,28 @@
-import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
-  DocumentTextIcon, 
-  UserGroupIcon, 
-  HomeIcon, 
-  PlusIcon 
+  HomeIcon,
+  DocumentTextIcon,
+  PlusIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ArchiveBoxIcon,
+  DocumentPlusIcon
 } from '@heroicons/react/24/outline';
-import { FiFileText } from 'react-icons/fi';
 import { useDashboard } from '../../hooks/useApi';
-
-const navLinks = [
-  { to: '/dashboard', label: 'Dashboard', icon: <HomeIcon className="w-5 h-5" /> },
-  { to: '/prds', label: 'PRDs', icon: <DocumentTextIcon className="w-5 h-5" /> },
-  { to: '/personnel', label: 'Personnel', icon: <UserGroupIcon className="w-5 h-5" /> },
-];
+import logoImage from '../../assets/genprd_logo.svg';
 
 const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
   const location = useLocation();
-  const { dashboardData, getDashboard } = useDashboard();
-  const [isLoading, setIsLoading] = useState(true);
-
+  const { dashboardData } = useDashboard();
+  
   // Get recent PRDs from dashboard data
   const recentPRDs = dashboardData?.recentPRDs || [];
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-        await getDashboard();
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (!dashboardData) {
-      fetchDashboardData();
-    } else {
-      setIsLoading(false);
-    }
-  }, [dashboardData, getDashboard]);
+  const navLinks = [
+    { to: '/dashboard', label: 'Dashboard', icon: <HomeIcon className="w-5 h-5" /> },
+    { to: '/prds', label: 'All PRDs', icon: <DocumentTextIcon className="w-5 h-5" /> },
+  ];
 
   const isActive = (path) => {
     if (path === '/dashboard') {
@@ -49,99 +31,145 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
     return location.pathname.startsWith(path);
   };
   
-  // Handle navigation click for mobile view
-  const handleNavClick = (e) => {
+  const handleNavClick = () => {
     if (isMobile) {
       onCloseMobile();
     }
   };
 
+  // Format date helper
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   return (
-    <aside className="w-64 bg-white border-r border-gray-300 flex flex-col py-6 flex-shrink-0 h-full">
-      <div className="mb-8 flex items-center px-6">
-        <div className="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center mr-2">
-          <FiFileText className="h-4 w-4 text-white" />
-        </div>
+    <aside className="w-64 bg-white h-full flex flex-col flex-shrink-0 overflow-hidden">
+      {/* Logo and app brand - using SVG logo */}
+      <div className="p-5 flex items-center">
+        <img 
+          src={logoImage} 
+          alt="GenPRD Logo" 
+          className="h-8 w-auto mr-3"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.parentNode.innerHTML = `
+              <div class="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center mr-3">
+                <span class="text-white font-bold text-lg">G</span>
+              </div>
+            ` + e.target.parentNode.innerHTML.split('</img>')[1];
+          }}
+        />
         <span className="font-semibold text-xl text-gray-900">GenPRD</span>
       </div>
       
-      {/* Main navigation */}
-      <nav className="flex-none space-y-1 px-4 mb-8">
+      {/* New PRD button - white with soft border as requested */}
+      <div className="px-5 pb-4">
+        <Link
+          to="/prds/new"
+          className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-all shadow-sm"
+          onClick={handleNavClick}
+        >
+          <PlusIcon className="w-5 h-5 mr-2" />
+          New PRD
+        </Link>
+      </div>
+      
+      {/* Main navigation - with soft gray/glassmorphism active state */}
+      <nav className="px-5 py-2 flex-none">
         {navLinks.map(link => (
           <Link
             key={link.to}
             to={link.to}
-            className={`flex items-center px-4 py-2.5 rounded-md text-base transition-colors ${
+            className={`flex items-center px-4 py-2.5 my-1 rounded-md text-sm font-medium transition-colors ${
               isActive(link.to) 
-                ? 'bg-gray-100 text-gray-900 font-medium' 
+                ? 'bg-gray-100/80 backdrop-blur-sm text-gray-900' 
                 : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
             }`}
             onClick={handleNavClick}
           >
-            <span className="text-gray-500 mr-3">{link.icon}</span>
+            <span className={`mr-3 flex-shrink-0 ${isActive(link.to) ? 'text-gray-800' : 'text-gray-500'}`}>
+              {link.icon}
+            </span>
             <span>{link.label}</span>
           </Link>
         ))}
-
-        {/* Create PRD button */}
-        <div className="py-2">
-          <Link
-            to="/prds/new"
-            className="flex items-center w-full px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors"
-            onClick={handleNavClick}
-          >
-            <PlusIcon className="w-5 h-5 mr-2" />
-            New PRD
-          </Link>
-        </div>
       </nav>
-
-      {/* Recent PRDs */}
-      <div className="border-t border-gray-200 pt-4 mt-2 flex-grow overflow-y-auto">
-        <div className="px-6 mb-4">
-          <h3 className="text-sm font-medium text-gray-900">
-            Recent PRDs
-          </h3>
-        </div>
-
-        <div className="px-4 space-y-1">
-          {isLoading ? (
-            <div className="text-center py-4">
-              <div className="animate-spin inline-block w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full"></div>
+      
+      {/* Section divider */}
+      <div className="px-5 py-3">
+        <div className="h-px bg-gray-200"></div>
+      </div>
+      
+      {/* Pinned section */}
+      <div className="px-5">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          PINNED
+        </h3>
+        <div className="space-y-1">
+          {recentPRDs.slice(0, 2).map(prd => (
+            <Link
+              key={`pin-${prd.id}`}
+              to={`/prds/${prd.id}`}
+              className="block px-4 py-2 hover:bg-gray-50 rounded-md text-sm"
+              onClick={handleNavClick}
+            >
+              <span className="block text-sm font-medium truncate text-gray-900">
+                {prd.product_name}
+              </span>
+              <div className="flex items-center text-xs text-gray-500 mt-1">
+                <ClockIcon className="w-3 h-3 mr-1" />
+                {formatDate(prd.updated_at)}
+              </div>
+            </Link>
+          ))}
+          
+          {/* If no pinned PRDs yet */}
+          {recentPRDs.length === 0 && (
+            <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-200 rounded-md">
+              <DocumentPlusIcon className="w-5 h-5 mx-auto mb-1 text-gray-400" />
+              <p>No pinned PRDs</p>
             </div>
-          ) : (
-            <>
-              {recentPRDs.length > 0 ? (
-                recentPRDs.slice(0, 3).map(prd => (
-                  <Link
-                    key={prd.id}
-                    to={`/prds/${prd.id}`}
-                    className="block px-4 py-2 hover:bg-gray-50 rounded-md"
-                    onClick={handleNavClick}
-                  >
-                    <span className="block text-sm font-medium truncate text-gray-900">
-                      {prd.product_name}
-                    </span>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className={`text-xs inline-block px-2 py-0.5 rounded-full 
-                        bg-gray-100 text-gray-700
-                      `}>
-                        {prd.document_stage === 'inprogress' 
-                          ? 'In Progress' 
-                          : prd.document_stage.charAt(0).toUpperCase() + prd.document_stage.slice(1)}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        v{prd.document_version}
-                      </span>
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                <p className="text-center text-sm text-gray-500 py-2">
-                  No recent PRDs
-                </p>
+          )}
+        </div>
+      </div>
+      
+      {/* Recent section */}
+      <div className="px-5 mt-6 flex-grow overflow-y-auto">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          RECENT
+        </h3>
+        <div className="space-y-1">
+          {recentPRDs.map(prd => (
+            <Link
+              key={prd.id}
+              to={`/prds/${prd.id}`}
+              className="flex justify-between items-center px-4 py-2 hover:bg-gray-50 rounded-md"
+              onClick={handleNavClick}
+            >
+              <span className="block text-sm truncate text-gray-900 flex-grow mr-2">
+                {prd.product_name}
+              </span>
+              {prd.document_stage === 'finished' && (
+                <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
               )}
-            </>
+              {prd.document_stage === 'archived' && (
+                <ArchiveBoxIcon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              )}
+              {prd.document_stage === 'inprogress' && (
+                <ClockIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
+              )}
+            </Link>
+          ))}
+          
+          {/* If no recent PRDs */}
+          {recentPRDs.length === 0 && (
+            <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-200 rounded-md">
+              <DocumentPlusIcon className="w-5 h-5 mx-auto mb-1 text-gray-400" />
+              <p>Start by creating a PRD</p>
+            </div>
           )}
         </div>
       </div>

@@ -13,7 +13,7 @@ const Header = ({ isAuthenticated, user, logout }) => {
               alt="GenPRD Logo" 
               className="w-full h-full"
               onError={(e) => {
-                // Fallback jika gambar tidak ditemukan
+                // Fallback if the image fails to load
                 e.target.onerror = null;
                 e.target.parentNode.innerHTML = `
                   <div class="w-12 h-12 bg-gray-900 rounded-md flex items-center justify-center">

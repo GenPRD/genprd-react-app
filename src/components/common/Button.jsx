@@ -12,7 +12,7 @@ const Button = forwardRef(({
 }, ref) => {
   const baseClasses = 'inline-flex items-center justify-center font-medium rounded transition-all duration-300';
   
-  // Konsistensi dalam spacing dan padding
+  // Pading and Spacing Consistency
   const sizes = {
     sm: 'text-sm px-3 py-1.5 gap-1.5',
     md: 'text-sm px-4 py-2 gap-2',

@@ -18,6 +18,18 @@ export default {
           700: '#0288D1',
           900: '#01579B',
         },
+        success: {
+          50: '#E8F5E9',
+          100: '#C8E6C9',
+          500: '#4CAF50',
+          600: '#43A047', 
+        },
+        warning: {
+          50: '#FFF8E1',
+          100: '#FFECB3',
+          500: '#FFC107',
+          600: '#FFB300',
+        },
         gray: {
           900: '#1f2937',
         }
@@ -37,6 +49,9 @@ export default {
           '100%': { transform: 'translateY(0)' },
         },
       },
+      borderRadius: {
+        'xl': '0.75rem', // Slightly increased radius for cards
+      }
     },
   },
   plugins: [],
