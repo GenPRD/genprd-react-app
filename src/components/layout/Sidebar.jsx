@@ -1,28 +1,93 @@
 import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useEffect, useState, useRef } from 'react';
 import { 
   HomeIcon,
   DocumentTextIcon,
   PlusIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  ArchiveBoxIcon,
-  DocumentPlusIcon
+  DocumentPlusIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline';
-import { useDashboard } from '../../hooks/useApi';
+import { usePRD } from '../../hooks/usePRD';
 import logoImage from '../../assets/genprd_logo.svg';
 
 const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
   const location = useLocation();
-  const { dashboardData } = useDashboard();
+  const { getAllPRDs, loading: apiLoading } = usePRD();
+  const [recentPRDs, setRecentPRDs] = useState([]);
+  const [pinnedPRDs, setPinnedPRDs] = useState([]);
+  const [dataError, setDataError] = useState(null);
+  const [loading, setLoading] = useState(false);
   
-  // Get recent PRDs from dashboard data
-  const recentPRDs = dashboardData?.recentPRDs || [];
+  // Use a ref to track if component is mounted
+  const isMounted = useRef(true);
+  // Use a ref to track if we've already fetched data
+  const dataFetched = useRef(false);
 
-  const navLinks = [
-    { to: '/dashboard', label: 'Dashboard', icon: <HomeIcon className="w-5 h-5" /> },
-    { to: '/prds', label: 'All PRDs', icon: <DocumentTextIcon className="w-5 h-5" /> },
-  ];
+  // Fetch PRD data only once on component mount
+  useEffect(() => {
+    // Set isMounted to false on cleanup
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Only fetch if we haven't already fetched and component is mounted
+    if (!dataFetched.current && isMounted.current) {
+      const fetchPRDs = async () => {
+        try {
+          setLoading(true);
+          console.log('Fetching PRDs for sidebar (once)...');
+          
+          const result = await getAllPRDs();
+          
+          // Guard clause to prevent state updates if component unmounted
+          if (!isMounted.current) return;
+          
+          if (result?.status === 'success' && result.data) {
+            // Get the prds array from the correct path
+            const prdsArray = result.data.prds || [];
+            
+            if (Array.isArray(prdsArray)) {
+              // Sort by updated_at for recent PRDs
+              const sortedPRDs = [...prdsArray].sort((a, b) => 
+                new Date(b.updated_at || Date.now()) - new Date(a.updated_at || Date.now())
+              );
+              
+              // Get pinned PRDs
+              const pinned = prdsArray.filter(prd => prd.is_pinned === true);
+              
+              // Set states - no limit on pinned, up to 25 for recent
+              setPinnedPRDs(pinned); // No limit on pinned PRDs
+              setRecentPRDs(sortedPRDs.slice(0, 25)); // Limit to 25 recent PRDs
+              setDataError(null);
+            } else {
+              console.error('PRDs data is not an array:', prdsArray);
+              setDataError('Invalid PRD data format');
+            }
+          } else {
+            console.error('Error in PRD response:', result);
+            setDataError('Failed to fetch PRDs');
+          }
+        } catch (err) {
+          // Guard clause to prevent state updates if component unmounted
+          if (!isMounted.current) return;
+          
+          console.error('Error fetching PRDs for sidebar:', err);
+          setDataError('Failed to load PRDs');
+        } finally {
+          // Guard clause to prevent state updates if component unmounted
+          if (!isMounted.current) return;
+          
+          setLoading(false);
+          // Mark as fetched to prevent additional fetches
+          dataFetched.current = true;
+        }
+      };
+
+      fetchPRDs();
+    }
+  }, [getAllPRDs]);
 
   const isActive = (path) => {
     if (path === '/dashboard') {
@@ -37,37 +102,35 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
     }
   };
 
-  // Format date helper
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  // JSX rendering remains the same, just update loading check
+  const isLoading = loading || apiLoading;
+
+  // This is the scrollable area container reference
+  const scrollContainerRef = useRef(null);
 
   return (
-    // Tambahkan border-r dan shadow-sm
-    <aside className="w-64 bg-white h-full flex flex-col flex-shrink-0 overflow-hidden border-r border-gray-200 shadow-sm">
-      {/* Logo and app brand - using SVG logo */}
-      <div className="p-5 flex items-center">
+    <aside className="w-64 bg-white h-full flex flex-col flex-shrink-0 border-r border-gray-200 shadow-sm">
+      {/* Logo section - Outside scrollable area */}
+      <div className="p-5 flex items-center flex-shrink-0">
         <img 
           src={logoImage} 
           alt="GenPRD Logo" 
           className="h-8 w-auto mr-3"
           onError={(e) => {
             e.target.onerror = null;
+            e.target.style.display = 'none';
             e.target.parentNode.innerHTML = `
               <div class="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center mr-3">
                 <span class="text-white font-bold text-lg">G</span>
               </div>
-            ` + e.target.parentNode.innerHTML.split('</img>')[1];
+            ` + e.target.parentNode.innerHTML;
           }}
         />
         <span className="font-semibold text-xl text-gray-900">GenPRD</span>
       </div>
       
-      {/* New PRD button - white with soft border as requested */}
-      <div className="px-5 pb-4">
+      {/* New PRD button - Outside scrollable area */}
+      <div className="px-5 pb-4 flex-shrink-0">
         <Link
           to="/prds/new"
           className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-gray-800 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-all shadow-sm"
@@ -78,98 +141,137 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
         </Link>
       </div>
       
-      {/* Main navigation - with soft gray/glassmorphism active state */}
+      {/* Main navigation - Outside scrollable area */}
       <nav className="px-5 py-2 flex-none">
-        {navLinks.map(link => (
-          <Link
-            key={link.to}
-            to={link.to}
-            className={`flex items-center px-4 py-2.5 my-1 rounded-md text-sm font-medium transition-colors ${
-              isActive(link.to) 
-                ? 'bg-gray-100/80 backdrop-blur-sm text-gray-900' 
-                : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-            }`}
-            onClick={handleNavClick}
-          >
-            <span className={`mr-3 flex-shrink-0 ${isActive(link.to) ? 'text-gray-800' : 'text-gray-500'}`}>
-              {link.icon}
-            </span>
-            <span>{link.label}</span>
-          </Link>
-        ))}
+        <Link
+          to="/dashboard"
+          className={`flex items-center px-4 py-2.5 my-1 rounded-md text-sm font-medium transition-colors ${
+            isActive('/dashboard') 
+              ? 'bg-gray-100/80 backdrop-blur-sm text-gray-900' 
+              : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+          }`}
+          onClick={handleNavClick}
+        >
+          <span className={`mr-3 flex-shrink-0 ${isActive('/dashboard') ? 'text-gray-800' : 'text-gray-500'}`}>
+            <HomeIcon className="w-5 h-5" />
+          </span>
+          <span>Dashboard</span>
+        </Link>
+        
+        <Link
+          to="/prds"
+          className={`flex items-center px-4 py-2.5 my-1 rounded-md text-sm font-medium transition-colors ${
+            isActive('/prds') && !isActive('/prds/new')
+              ? 'bg-gray-100/80 backdrop-blur-sm text-gray-900' 
+              : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+          }`}
+          onClick={handleNavClick}
+        >
+          <span className={`mr-3 flex-shrink-0 ${isActive('/prds') && !isActive('/prds/new') ? 'text-gray-800' : 'text-gray-500'}`}>
+            <DocumentTextIcon className="w-5 h-5" />
+          </span>
+          <span>All PRDs</span>
+        </Link>
       </nav>
-      
-      {/* Section divider */}
-      <div className="px-5 py-3">
+
+      {/* Section divider - Outside scrollable area */}
+      <div className="px-5 py-3 flex-shrink-0">
         <div className="h-px bg-gray-200"></div>
       </div>
       
-      {/* Pinned section */}
-      <div className="px-5">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          PINNED
-        </h3>
-        <div className="space-y-1">
-          {recentPRDs.slice(0, 2).map(prd => (
-            <Link
-              key={`pin-${prd.id}`}
-              to={`/prds/${prd.id}`}
-              className="block px-4 py-2 hover:bg-gray-50 rounded-md text-sm"
-              onClick={handleNavClick}
-            >
-              <span className="block text-sm font-medium truncate text-gray-900">
-                {prd.product_name}
-              </span>
-              <div className="flex items-center text-xs text-gray-500 mt-1">
-                <ClockIcon className="w-3 h-3 mr-1" />
-                {formatDate(prd.updated_at)}
+      {/* Scrollable content starts here */}
+      <div 
+        ref={scrollContainerRef}
+        className="flex-grow flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400"
+      >
+        {/* PINNED section */}
+        <div className="px-5 flex-shrink-0">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            PINNED
+          </h3>
+          <div className="space-y-1">
+            {isLoading && pinnedPRDs.length === 0 && (
+              <div className="px-4 py-3 text-sm text-center text-gray-500">Loading...</div>
+            )}
+            
+            {!isLoading && pinnedPRDs.length > 0 && pinnedPRDs.map(prd => (
+              <Link
+                key={`pin-${prd.id}`}
+                to={`/prds/${prd.id}`}
+                className="block px-4 py-2 hover:bg-gray-50 rounded-md text-sm"
+                onClick={handleNavClick}
+              >
+                <span className="block text-sm font-medium truncate text-gray-900">
+                  {prd.product_name || 'Unnamed PRD'}
+                </span>
+              </Link>
+            ))}
+            
+            {/* If no pinned PRDs yet */}
+            {!isLoading && pinnedPRDs.length === 0 && !dataError && (
+              <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-200 rounded-md">
+                <DocumentPlusIcon className="w-5 h-5 mx-auto mb-1 text-gray-400" />
+                <p>No pinned PRDs</p>
               </div>
-            </Link>
-          ))}
-          
-          {/* If no pinned PRDs yet */}
-          {recentPRDs.length === 0 && (
-            <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-200 rounded-md">
-              <DocumentPlusIcon className="w-5 h-5 mx-auto mb-1 text-gray-400" />
-              <p>No pinned PRDs</p>
-            </div>
-          )}
+            )}
+            
+            {dataError && !isLoading && (
+              <div className="px-4 py-2 text-sm text-center text-red-500">
+                {dataError}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      
-      {/* Recent section */}
-      <div className="px-5 mt-6 flex-grow overflow-y-auto">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          RECENT
-        </h3>
-        <div className="space-y-1">
-          {recentPRDs.map(prd => (
-            <Link
-              key={prd.id}
-              to={`/prds/${prd.id}`}
-              className="flex justify-between items-center px-4 py-2 hover:bg-gray-50 rounded-md"
-              onClick={handleNavClick}
-            >
-              <span className="block text-sm truncate text-gray-900 flex-grow mr-2">
-                {prd.product_name}
-              </span>
-              {prd.document_stage === 'finished' && (
-                <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
-              )}
-              {prd.document_stage === 'archived' && (
-                <ArchiveBoxIcon className="w-4 h-4 text-gray-500 flex-shrink-0" />
-              )}
-              {prd.document_stage === 'inprogress' && (
-                <ClockIcon className="w-4 h-4 text-blue-500 flex-shrink-0" />
-              )}
-            </Link>
-          ))}
+        
+        {/* RECENT section - no icons, simplified */}
+        <div className="px-5 mt-6">
+          {/* Header without "See all" link */}
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            RECENT
+          </h3>
+          <div className="space-y-1">
+            {isLoading && recentPRDs.length === 0 && (
+              <div className="px-4 py-3 text-sm text-center text-gray-500">Loading...</div>
+            )}
+            
+            {!isLoading && recentPRDs.length > 0 && recentPRDs.map(prd => (
+              <Link
+                key={`recent-${prd.id}`}
+                to={`/prds/${prd.id}`}
+                className="block px-4 py-2 hover:bg-gray-50 rounded-md text-sm"
+                onClick={handleNavClick}
+              >
+                <span className="block text-sm truncate text-gray-900">
+                  {prd.product_name || 'Unnamed PRD'}
+                </span>
+              </Link>
+            ))}
+            
+            {!isLoading && recentPRDs.length === 0 && !dataError && (
+              <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-200 rounded-md">
+                <DocumentPlusIcon className="w-5 h-5 mx-auto mb-1 text-gray-400" />
+                <p>Start by creating a PRD</p>
+              </div>
+            )}
+            
+            {dataError && !isLoading && (
+              <div className="px-4 py-2 text-sm text-center text-red-500">
+                {dataError}
+              </div>
+            )}
+          </div>
           
-          {/* If no recent PRDs */}
-          {recentPRDs.length === 0 && (
-            <div className="px-4 py-3 text-sm text-center text-gray-500 border border-dashed border-gray-200 rounded-md">
-              <DocumentPlusIcon className="w-5 h-5 mx-auto mb-1 text-gray-400" />
-              <p>Start by creating a PRD</p>
+          {/* "See All" button styled like in Claude - at the bottom */}
+          {recentPRDs.length > 0 && (
+            <div className="mt-3 mb-8">
+              <Link
+                to="/prds"
+                className="flex items-center px-4 py-3 text-sm text-gray-500 hover:bg-gray-50 rounded-md border border-transparent hover:border-gray-100 transition-all"
+                onClick={handleNavClick}
+              >
+                <span className="flex-grow text-left">All PRDs</span>
+                <ArrowRightIcon className="w-4 h-4 ml-2" />
+              </Link>
             </div>
           )}
         </div>

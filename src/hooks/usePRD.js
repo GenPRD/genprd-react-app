@@ -40,7 +40,6 @@ export const usePRD = () => {
         }
       });
       
-      // Route benar: /prd tanpa prefix /api karena sudah ada di baseURL
       const response = await api.get(`/prd${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
       return response.data;
     } catch (err) {

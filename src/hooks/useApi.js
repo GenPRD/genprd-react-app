@@ -227,16 +227,16 @@ export const usePRD = () => {
       });
       
       const result = await makeRequest(async () => {
-        // PERBAIKAN: Gunakan /prd bukan /prds atau /api/prds
+        // Perbaiki path API - seharusnya /prd tanpa prefix /api
         const response = await api.get(`/prd${queryParams.toString() ? '?' + queryParams.toString() : ''}`)
         return response.data
       })
+      setLoading(false) // Pastikan loading dimatikan setelah sukses
       return result
     } catch (err) {
       console.error('Error in getAllPRDs fetch:', err)
-      throw err
-    } finally {
       setLoading(false)
+      throw err
     }
   }
 
