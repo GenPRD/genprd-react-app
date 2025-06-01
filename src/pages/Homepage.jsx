@@ -3,10 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTestAPI } from '../hooks/useApi';
 import { Button } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-
-// Import komponen layout yang esensial
-import Header from '../components/layout/Header';
-import Footer from '../components/layout/Footer';
+import { Box, Typography } from '@mui/material';
 
 // Import icons
 import { 
@@ -14,11 +11,12 @@ import {
   FiUsers, 
   FiClipboard, 
   FiLayers,
-  FiArrowRight
+  FiArrowRight,
+  FiFileText
 } from 'react-icons/fi';
 
 const Homepage = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const { testConnection } = useTestAPI();
 
   useEffect(() => {
@@ -75,6 +73,78 @@ const Homepage = () => {
       description: 'Publish your finalized PRD in multiple formats ready for your development team.'
     }
   ];
+
+  // Inline Header component (previously imported)
+  const Header = () => {
+    return (
+      <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-100 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center">
+              <FiFileText className="h-4 w-4 text-white" />
+            </div>
+            <span className="text-xl font-medium text-gray-900">GenPRD</span>
+          </div>
+          
+          {isAuthenticated ? (
+            <div className="flex items-center space-x-4">
+              <span className="hidden sm:block text-sm text-gray-600">
+                {user?.name}
+              </span>
+              <Button 
+                onClick={logout} 
+                variant="outlined"
+                sx={{ 
+                  borderColor: '#e0e0e0',
+                  color: '#1a1a1a',
+                  '&:hover': { borderColor: '#1a1a1a', backgroundColor: 'transparent' },
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  boxShadow: 'none'
+                }}
+              >
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              component={RouterLink} 
+              to="/login" 
+              variant="contained"
+              sx={{ 
+                backgroundColor: '#1a1a1a', 
+                '&:hover': { backgroundColor: '#2c2c2c' },
+                borderRadius: '4px',
+                boxShadow: 'none',
+                textTransform: 'none'
+              }}
+            >
+              Login
+            </Button>
+          )}
+        </div>
+      </header>
+    );
+  };
+
+  // Inline Footer component (previously imported)
+  const Footer = () => {
+    return (
+      <footer className="py-8 border-t border-gray-100 bg-white">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <div className="w-6 h-6 bg-gray-900 rounded-md flex items-center justify-center">
+              <FiFileText className="h-3 w-3 text-white" />
+            </div>
+            <span className="text-base font-medium text-gray-900">GenPRD</span>
+          </div>
+          <p className="text-sm text-gray-500 mb-1">Transformative Horizons</p>
+          <p className="text-xs text-gray-400 mb-2">Bridging Mind, Building Futures</p>
+          <p className="text-xs text-gray-400">© 2025 GenPRD. All rights reserved.</p>
+        </div>
+      </footer>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-white">
