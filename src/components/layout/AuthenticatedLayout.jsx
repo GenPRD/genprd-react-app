@@ -22,7 +22,7 @@ const AuthenticatedLayout = ({ children }) => {
   // Don't render if user is not authenticated or user data is missing
   if (!isAuthenticated || !user || !mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading your workspace...</p>
@@ -32,9 +32,9 @@ const AuthenticatedLayout = ({ children }) => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block md:w-64 flex-shrink-0 border-r border-gray-100">
+    <div className="flex h-screen bg-white overflow-hidden">
+      {/* Desktop Sidebar - tambahkan soft border */}
+      <div className="hidden md:block md:w-64 flex-shrink-0 border-r border-gray-200 shadow-sm">
         <Sidebar />
       </div>
 
@@ -52,7 +52,7 @@ const AuthenticatedLayout = ({ children }) => {
         )}
       </AnimatePresence>
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Sidebar - tambahkan soft border */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -60,7 +60,7 @@ const AuthenticatedLayout = ({ children }) => {
             animate={{ x: 0 }}
             exit={{ x: -320 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="md:hidden fixed inset-y-0 left-0 w-64 bg-white z-50 border-r border-gray-100 shadow-lg"
+            className="md:hidden fixed inset-y-0 left-0 w-64 bg-white z-50 border-r border-gray-200 shadow-md"
           >
             <div className="absolute top-0 right-0 pt-4 pr-4">
               <button
@@ -82,8 +82,8 @@ const AuthenticatedLayout = ({ children }) => {
           onMobileMenuClick={() => setSidebarOpen(true)}
         />
 
-        {/* Main content with scrolling */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 py-6">
+        {/* Main content with scrolling - ubah bg jadi putih */}
+        <main className="flex-1 overflow-y-auto bg-white py-6">
           <div className="max-w-7xl mx-auto px-6">
             <motion.div
               initial={{ opacity: 0, y: 10 }}

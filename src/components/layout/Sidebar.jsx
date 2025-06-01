@@ -46,7 +46,8 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
   };
 
   return (
-    <aside className="w-64 bg-white h-full flex flex-col flex-shrink-0 overflow-hidden">
+    // Tambahkan border-r dan shadow-sm
+    <aside className="w-64 bg-white h-full flex flex-col flex-shrink-0 overflow-hidden border-r border-gray-200 shadow-sm">
       {/* Logo and app brand - using SVG logo */}
       <div className="p-5 flex items-center">
         <img 

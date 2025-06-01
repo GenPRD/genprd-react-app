@@ -29,7 +29,8 @@ const Navbar = ({ showMobileMenu = false, onMobileMenuClick = () => {} }) => {
   };
 
   return (
-    <header className="bg-white border-b border-gray-100 py-3.5 px-5">
+    // Ubah border menjadi lebih soft dan tambahkan shadow-sm
+    <header className="bg-white border-b border-gray-200 py-3.5 px-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           {/* Mobile menu button - only shown on mobile */}
@@ -94,7 +95,7 @@ const Navbar = ({ showMobileMenu = false, onMobileMenuClick = () => {} }) => {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden"
+                className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden"
               >
                 <div className="p-3 border-b border-gray-100">
                   <p className="font-medium text-gray-900">{user?.name || 'User'}</p>

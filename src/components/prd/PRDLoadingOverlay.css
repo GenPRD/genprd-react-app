@@ -1,0 +1,10 @@
+.backdrop-overlay {
+  background-color: rgba(17, 24, 39, 0.7); /* bg-gray-900 at 70% opacity fallback */
+}
+
+@supports (backdrop-filter: blur(8px)) {
+  .backdrop-overlay {
+    background-color: rgba(17, 24, 39, 0.5); /* bg-gray-900 at 50% opacity */
+    backdrop-filter: blur(8px);
+  }
+}

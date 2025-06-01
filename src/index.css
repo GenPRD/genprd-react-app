@@ -206,3 +206,25 @@ body.sidebar-open {
     padding-right: 1rem;
   }
 }
+
+/* Style untuk loading state */
+.loading-active::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(17, 24, 39, 0.8);
+  z-index: 99990;
+  pointer-events: all;
+}
+
+/* Pastikan body memiliki overflow hidden saat loading */
+body.loading-active {
+  overflow: hidden !important;
+}
