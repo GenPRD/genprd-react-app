@@ -217,10 +217,18 @@ export const usePersonnel = () => {
 export const usePRD = () => {
   const { makeRequest, loading, error, setLoading, setError } = useApi()
 
-  const getAllPRDs = async () => {
+  const getAllPRDs = async (filters = {}) => {
     try {
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value);
+        }
+      });
+      
       const result = await makeRequest(async () => {
-        const response = await api.get('/prd')
+        // PERBAIKAN: Gunakan /prd bukan /prds atau /api/prds
+        const response = await api.get(`/prd${queryParams.toString() ? '?' + queryParams.toString() : ''}`)
         return response.data
       })
       return result
@@ -235,6 +243,7 @@ export const usePRD = () => {
   const getPRDById = async (id) => {
     try {
       const result = await makeRequest(async () => {
+        // PERBAIKAN: Gunakan /prd bukan /prds
         const response = await api.get(`/prd/${id}`)
         return response.data
       })
@@ -247,10 +256,27 @@ export const usePRD = () => {
     }
   }
 
+  const getRecentPRDs = async (limit = 10) => {
+    try {
+      const result = await makeRequest(async () => {
+        // PERBAIKAN: Gunakan /prd/recent
+        const response = await api.get(`/prd/recent?limit=${limit}`)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in getRecentPRDs fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const createPRD = async (prdData) => {
     try {
       const result = await makeRequest(async () => {
-        const response = await api.post('/prd', prdData)
+        // Perbaiki path API
+        const response = await api.post('/api/prds', prdData)
         return response.data
       })
       return result
@@ -265,7 +291,8 @@ export const usePRD = () => {
   const updatePRD = async (id, prdData) => {
     try {
       const result = await makeRequest(async () => {
-        const response = await api.put(`/prd/${id}`, prdData)
+        // Perbaiki path API
+        const response = await api.put(`/api/prds/${id}`, prdData)
         return response.data
       })
       return result
@@ -280,7 +307,8 @@ export const usePRD = () => {
   const deletePRD = async (id) => {
     try {
       const result = await makeRequest(async () => {
-        const response = await api.delete(`/prd/${id}`)
+        // Perbaiki path API
+        const response = await api.delete(`/api/prds/${id}`)
         return response.data
       })
       return result
@@ -295,7 +323,8 @@ export const usePRD = () => {
   const archivePRD = async (id) => {
     try {
       const result = await makeRequest(async () => {
-        const response = await api.put(`/prd/${id}/archive`)
+        // Perbaiki path API dan method: put -> patch
+        const response = await api.patch(`/api/prds/${id}/archive`)
         return response.data
       })
       return result
@@ -306,11 +335,51 @@ export const usePRD = () => {
       setLoading(false)
     }
   }
-
-  const downloadPRD = async (id) => {
+  
+  const togglePinPRD = async (id) => {
     try {
       const result = await makeRequest(async () => {
-        const response = await api.get(`/prd/${id}/download`)
+        // Tambahkan endpoint baru
+        const response = await api.patch(`/api/prds/${id}/pin`)
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in togglePinPRD fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  const updatePRDStage = async (id, stage) => {
+    try {
+      const result = await makeRequest(async () => {
+        // Tambahkan endpoint baru
+        const response = await api.patch(`/api/prds/${id}/stage`, { document_stage: stage })
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in updatePRDStage fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const downloadPRD = async (id, options = {}) => {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value);
+        }
+      });
+      
+      const result = await makeRequest(async () => {
+        // Perbaiki path API
+        const response = await api.get(`/api/prds/${id}/download${queryParams.toString() ? '?' + queryParams.toString() : ''}`)
         return response.data
       })
       return result
@@ -321,15 +390,35 @@ export const usePRD = () => {
       setLoading(false)
     }
   }
+  
+  const getDashboardStats = async () => {
+    try {
+      const result = await makeRequest(async () => {
+        // Tambahkan endpoint baru
+        const response = await api.get('/api/prds/dashboard')
+        return response.data
+      })
+      return result
+    } catch (err) {
+      console.error('Error in getDashboardStats fetch:', err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return {
     getAllPRDs,
     getPRDById,
+    getRecentPRDs,
     createPRD,
     updatePRD,
     deletePRD,
     archivePRD,
+    togglePinPRD,
+    updatePRDStage,
     downloadPRD,
+    getDashboardStats,
     loading,
     error
   }
