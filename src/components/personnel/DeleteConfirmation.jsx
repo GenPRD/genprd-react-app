@@ -1,5 +1,5 @@
 import { TrashIcon } from '@heroicons/react/24/outline';
-import ModalOverlay from '../ui/ModalOverlay';
+import ModalOverlay from '../common/ModalOverlay';
 
 const DeleteConfirmation = ({ isOpen, onClose, onConfirm, personnelName }) => {
   return (

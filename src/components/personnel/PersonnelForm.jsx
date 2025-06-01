@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import ModalOverlay from '../ui/ModalOverlay';
+import ModalOverlay from '../common/ModalOverlay';
 
 const PersonnelForm = ({ isOpen, onClose, onSubmit, currentPersonnel = null }) => {
   const [formData, setFormData] = useState({

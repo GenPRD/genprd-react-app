@@ -7,7 +7,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import PersonnelList from '../components/personnel/PersonnelList';
 import PersonnelForm from '../components/personnel/PersonnelForm';
 import DeleteConfirmation from '../components/personnel/DeleteConfirmation';
-import Toast from '../components/ui/Toast';
+import Toast from '../components/common/Toast';
 
 const Personnel = () => {
   const { user } = useAuth();
