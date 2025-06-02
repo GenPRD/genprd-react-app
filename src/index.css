@@ -228,3 +228,24 @@ body.sidebar-open {
 body.loading-active {
   overflow: hidden !important;
 }
+
+/* Tambahkan ke file CSS utama seperti index.css */
+.dropdown-menu-container {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  z-index: 100;
+  min-width: 15rem;
+  right: 0;
+  margin-top: 0.5rem;
+}
+
+/* Pastikan dropdown selalu terlihat */
+.dropdown-menu-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 150ms ease-in-out, transform 150ms ease-in-out;
+}

@@ -137,18 +137,24 @@ export const usePRD = () => {
       setLoading(true);
       setError(null);
       
-      // Ensure correct API endpoint based on your backend
-      // If the API endpoint should be /prd/{id} and not /api/prds/{id}
+      console.log('Updating PRD with data:', prdData); // Debug log
+      
       const response = await api.put(`/prd/${id}`, prdData);
       
-      console.log('Update PRD response:', response.data);
-      return response.data;
+      console.log('Update PRD response:', response.data); // Debug log
+      
+      if (response.data?.status === 'success') {
+        return response.data;
+      } else {
+        throw new Error('Invalid response format from server');
+      }
     } catch (err) {
       console.error('Error updating PRD:', {
         id,
         error: err.message,
         response: err.response?.data,
-        status: err.response?.status
+        status: err.response?.status,
+        data: prdData // Log the data we tried to send
       });
       
       const errorMsg = err.response?.data?.message || 'Failed to update PRD';
@@ -226,6 +232,7 @@ export const usePRD = () => {
       const response = await api.patch(`/prd/${id}/stage`, { document_stage: stage });
       return response.data;
     } catch (err) {
+      console.error('Error updating PRD stage:', err);
       const errorMsg = err.response?.data?.message || 'Failed to update PRD stage';
       setError(errorMsg);
       throw err;
@@ -234,19 +241,16 @@ export const usePRD = () => {
     }
   };
   
+  // Perbarui fungsi downloadPRD untuk tidak lagi mengubah document_stage
   const downloadPRD = async (id, options = {}) => {
     try {
       setLoading(true);
       setError(null);
       
-      const queryParams = new URLSearchParams();
-      Object.entries(options).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value);
-        }
-      });
+      // Tambahkan parameter update_stage=false untuk mencegah perubahan stage
+      const queryParams = new URLSearchParams({ update_stage: 'false', ...options });
       
-      const response = await api.get(`/prd/${id}/download${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
+      const response = await api.get(`/prd/${id}/download?${queryParams.toString()}`);
       return response.data;
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to download PRD';
@@ -278,7 +282,7 @@ export const usePRD = () => {
   return {
     loading,
     error,
-    setLoading, // Expose setLoading function
+    setLoading,
     getAllPRDs,
     getPRDById,
     getRecentPRDs,

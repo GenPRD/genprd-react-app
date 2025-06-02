@@ -181,7 +181,7 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
         <img 
           src={logoImage} 
           alt="GenPRD Logo" 
-          className="h-8 w-auto mr-3"
+          className="h-10 w-auto mr-3"
           onError={(e) => {
             e.target.onerror = null;
             e.target.style.display = 'none';

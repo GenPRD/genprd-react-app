@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePRD } from '../hooks/usePRD';
-import { TrashIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, ExclamationTriangleIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion'; // Tambahkan AnimatePresence di sini
 
 // Import komponen-komponen terpisah
@@ -33,7 +33,8 @@ const PRDDetail = () => {
     getPRDById, 
     updatePRD, 
     deletePRD, 
-    archivePRD, 
+    archivePRD,
+    updatePRDStage, // Make sure this is imported
     downloadPRD,
     loading: apiLoading,
     setLoading: setApiLoading // Expose setLoading from hook
@@ -45,6 +46,7 @@ const PRDDetail = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saveError, setSaveError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [customSections, setCustomSections] = useState([]);
   
   // Prevent multiple fetches with useRef
@@ -117,8 +119,46 @@ const PRDDetail = () => {
     }));
   };
 
+  const handleEdit = async (changes) => {
+    // If changes is an object (updating fields)
+    if (typeof changes === 'object') {
+      console.log('Received changes:', changes); // Debug log
+      
+      // Update local state immediately for UI responsiveness
+      setPRD(prev => ({
+        ...prev,
+        ...changes
+      }));
+      
+      // Save changes to server
+      try {
+        const response = await updatePRD(id, {
+          ...prd, // Include current PRD data
+          ...changes // Overlay with new changes
+        });
+        
+        if (response?.status === 'success' && response.data) {
+          // Update state with server response to ensure consistency
+          setPRD(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to save changes:', err);
+        // Revert changes if save failed
+        setPRD(prev => ({
+          ...prev,
+          product_name: prd.product_name,
+          document_version: prd.document_version
+        }));
+        setSaveError('Failed to save changes');
+      }
+    } else {
+      // Just toggle edit mode
+      setIsEditing(true);
+    }
+  };
+
   // Handle save changes with debounce
-  const handleSave = async () => {
+  const handleSave = async (changes = null) => {
     if (requestInProgress.current) return;
     
     try {
@@ -126,18 +166,21 @@ const PRDDetail = () => {
       setLoading(true);
       setSaveError(null);
       
-      // Include custom sections in PRD data
-      const prdWithCustomSections = {
+      // Include any immediate changes with the current PRD data
+      const updatedPRD = {
         ...prd,
+        ...(changes || {}), // Merge any immediate changes
         custom_sections: customSections
       };
       
-      const response = await updatePRD(id, prdWithCustomSections);
+      console.log('Saving PRD with data:', updatedPRD); // Debug log
+      
+      const response = await updatePRD(id, updatedPRD);
       
       if (!isMounted.current) return;
       
       if (response?.status === 'success') {
-        // Update local PRD state with server response if needed
+        // Update local state with server response
         if (response.data) {
           setPRD(response.data);
         }
@@ -184,15 +227,16 @@ const PRDDetail = () => {
     }
   };
 
-  // Handle archive
-  const handleArchive = async () => {
+  // Handle change document stage
+  const handleChangeStage = async (stage) => {
     if (requestInProgress.current) return;
     
     try {
       requestInProgress.current = true;
       setLoading(true);
+      setSaveError(null);
       
-      const response = await archivePRD(id);
+      const response = await updatePRDStage(id, stage);
       
       if (!isMounted.current) return;
       
@@ -201,12 +245,63 @@ const PRDDetail = () => {
           ...prev,
           document_stage: response.data.document_stage
         }));
+      } else {
+        setSaveError('Failed to update document stage');
       }
     } catch (err) {
       if (!isMounted.current) return;
       
-      console.error('Error archiving PRD:', err);
-      setSaveError(err.message || 'Failed to archive PRD');
+      console.error('Error updating document stage:', err);
+      setSaveError(err.message || 'Failed to update document stage');
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+      requestInProgress.current = false;
+    }
+  };
+
+  // Handle archive dengan confirmation modal
+  const handleArchiveClick = () => {
+    setShowArchiveModal(true);
+  };
+  
+  const handleArchiveConfirm = async () => {
+    setShowArchiveModal(false);
+    
+    if (requestInProgress.current) return;
+    
+    try {
+      requestInProgress.current = true;
+      setLoading(true);
+      setSaveError(null);
+      
+      const isCurrentlyArchived = prd.document_stage === 'archived';
+      let response;
+      
+      // Jika PRD saat ini diarsipkan, kita perlu me-unarchive dengan mengubah status
+      if (isCurrentlyArchived) {
+        response = await updatePRDStage(id, 'draft');
+      } else {
+        // Jika belum diarsipkan, gunakan endpoint archive
+        response = await archivePRD(id);
+      }
+      
+      if (!isMounted.current) return;
+      
+      if (response?.status === 'success' && response.data) {
+        setPRD(prev => ({
+          ...prev,
+          document_stage: response.data.document_stage
+        }));
+      } else {
+        setSaveError(`Failed to ${isCurrentlyArchived ? 'unarchive' : 'archive'} PRD`);
+      }
+    } catch (err) {
+      if (!isMounted.current) return;
+      
+      console.error(`Error ${prd.document_stage === 'archived' ? 'unarchiving' : 'archiving'} PRD:`, err);
+      setSaveError(err.message || `Failed to ${prd.document_stage === 'archived' ? 'unarchive' : 'archive'} PRD`);
     } finally {
       if (isMounted.current) {
         setLoading(false);
@@ -427,12 +522,21 @@ const PRDDetail = () => {
         <PRDDetailHeader 
           prd={prd}
           isEditing={isEditing}
-          onEdit={() => setIsEditing(true)}
-          onSave={handleSave}
-          onCancel={() => setIsEditing(false)}
+          onEdit={handleEdit} // Pass handleEdit directly
+          onSave={() => setIsEditing(false)} // Just handle edit mode
+          onCancel={() => {
+            setIsEditing(false);
+            // Reset any unsaved changes
+            setPRD(prev => ({
+              ...prev,
+              product_name: prd.product_name,
+              document_version: prd.document_version
+            }));
+          }}
           onDownload={handleDownload}
           onDelete={() => setShowDeleteModal(true)}
-          onArchive={handleArchive}
+          onArchive={handleArchiveClick}
+          onChangeStage={handleChangeStage}
         />
       </div>
       
@@ -543,6 +647,27 @@ const PRDDetail = () => {
         confirmButtonClass="bg-red-600 hover:bg-red-700 focus:ring-red-500"
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteModal(false)}
+      />
+      
+      {/* Archive Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showArchiveModal}
+        title={prd?.document_stage === 'archived' ? "Unarchive PRD" : "Archive PRD"}
+        message={
+          <span>
+            Are you sure you want to {prd?.document_stage === 'archived' ? "unarchive" : "archive"} the PRD "<span className="font-semibold text-gray-700">
+              {prd?.product_name}
+            </span>"?
+            {prd?.document_stage !== 'archived' && 
+              " Archived PRDs are moved out of your main PRD list but are still accessible."
+            }
+          </span>
+        }
+        icon={<ArchiveBoxIcon className="h-6 w-6 text-amber-600" aria-hidden="true" />}
+        confirmText={prd?.document_stage === 'archived' ? "Unarchive" : "Archive"}
+        confirmButtonClass="bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
+        onConfirm={handleArchiveConfirm}
+        onCancel={() => setShowArchiveModal(false)}
       />
     </motion.div>
   );
