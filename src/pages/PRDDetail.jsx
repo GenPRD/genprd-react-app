@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { usePRD } from '../hooks/usePRD';
 import { TrashIcon, ExclamationTriangleIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion'; // Tambahkan AnimatePresence di sini
+import debounce from 'lodash/debounce'; // Change to specific import
 
 // Import komponen-komponen terpisah
 import LoadingSpinner from '../components/auth/LoadingSpinner';
@@ -87,8 +88,12 @@ const PRDDetail = () => {
           if (response?.status === 'success') {
             setPRD(response.data);
             
-            if (response.data.custom_sections) {
-              setCustomSections(response.data.custom_sections);
+            // Check for custom sections in generated_sections
+            if (response.data.generated_sections?.custom_sections?.sections) {
+              setCustomSections(response.data.generated_sections.custom_sections.sections);
+            } else {
+              // Initialize empty array if not found
+              setCustomSections([]);
             }
           } else {
             setError('Failed to load PRD');
@@ -110,6 +115,31 @@ const PRDDetail = () => {
       fetchPRD();
     }
   }, [id, getPRDById, setApiLoading]);
+
+  // Add inside component, before render
+  const debouncedUpdate = useRef(
+    debounce(async (data) => {
+      try {
+        const response = await updatePRD(id, data);
+        if (response?.status === 'success' && response.data) {
+          setPRD(response.data);
+          if (response.data.custom_sections) {
+            setCustomSections(response.data.custom_sections);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to save changes:', err);
+        setSaveError('Failed to save changes');
+      }
+    }, 1000)
+  ).current;
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      debouncedUpdate.cancel();
+    };
+  }, [debouncedUpdate]);
 
   // Handle basic field changes
   const handleChange = (field, value) => {
@@ -348,32 +378,154 @@ const PRDDetail = () => {
     }
   };
 
-  // Handle adding custom section
-  const handleAddCustomSection = (title) => {
-    const newSection = {
-      id: generateUUID(), // Ganti uuidv4() dengan generateUUID()
-      title: title,
-      content: '',
-      type: 'custom'
-    };
+  // Perbaiki handleAddCustomSection
+  const handleAddCustomSection = async (title) => {
+    try {
+      const newSection = {
+        id: generateUUID(),
+        title: title || 'New Section',
+        content: '',
+        layout: 'text',
+        type: 'custom'
+      };
+      
+      const updatedSections = [...customSections, newSection];
+      setCustomSections(updatedSections);
+      
+      // Format data yang akan dikirim ke server
+      const updatedGeneratedSections = {
+        ...(prd.generated_sections || {}),
+        custom_sections: {
+          sections: updatedSections
+        }
+      };
+      
+      // Save ke database
+      const payload = {
+        ...prd,
+        generated_sections: updatedGeneratedSections
+      };
+      
+      // Hapus custom_sections dari root payload karena sudah masuk ke generated_sections
+      delete payload.custom_sections;
+      delete payload.id;
+      delete payload.user_id;
+      delete payload.created_at;
+      delete payload.updated_at;
+      
+      console.log('Adding new custom section, payload:', payload);
+      
+      const response = await updatePRD(id, payload);
+      
+      if (response?.status === 'success' && response.data) {
+        // Update state dengan respons server
+        setPRD(response.data);
+        
+        // Extract custom sections dari response
+        if (response.data.generated_sections?.custom_sections?.sections) {
+          setCustomSections(response.data.generated_sections.custom_sections.sections);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to add custom section:', err);
+      setSaveError('Failed to add custom section: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  // Perbaiki handleUpdateCustomSection
+  const handleUpdateCustomSection = async (updatedSection) => {
+    // Update local state immediately
+    const updatedSections = customSections.map(section =>
+      section.id === updatedSection.id ? updatedSection : section
+    );
     
-    setCustomSections(prev => [...prev, newSection]);
+    setCustomSections(updatedSections);
+    
+    try {
+      // Format untuk dikirim ke server
+      const updatedGeneratedSections = {
+        ...(prd.generated_sections || {}),
+        custom_sections: {
+          sections: updatedSections
+        }
+      };
+      
+      // Kirim data ke server
+      const payload = {
+        ...prd,
+        generated_sections: updatedGeneratedSections
+      };
+      
+      // Hapus custom_sections dari root payload
+      delete payload.custom_sections;
+      delete payload.id;
+      delete payload.user_id;
+      delete payload.created_at;
+      delete payload.updated_at;
+      
+      console.log('Saving PRD with custom sections:', updatedGeneratedSections.custom_sections);
+      
+      // Panggil API update PRD
+      const response = await updatePRD(id, payload);
+      
+      if (response?.status === 'success' && response.data) {
+        // Update with server response
+        console.log('Server response after update:', response.data);
+        
+        setPRD(response.data);
+        
+        // Extract custom sections dari response
+        if (response.data.generated_sections?.custom_sections?.sections) {
+          setCustomSections(response.data.generated_sections.custom_sections.sections);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update custom section:', err);
+      setSaveError('Failed to save custom section: ' + (err.message || 'Unknown error'));
+    }
   };
 
-  // Handle updating custom section
-  const handleUpdateCustomSection = (updatedSection) => {
-    setCustomSections(prev => 
-      prev.map(section => 
-        section.id === updatedSection.id ? updatedSection : section
-      )
-    );
-  };
-
-  // Handle deleting custom section
-  const handleDeleteCustomSection = (sectionId) => {
-    setCustomSections(prev => 
-      prev.filter(section => section.id !== sectionId)
-    );
+  // Perbaiki handleDeleteCustomSection
+  const handleDeleteCustomSection = async (sectionId) => {
+    try {
+      const updatedSections = customSections.filter(section => section.id !== sectionId);
+      setCustomSections(updatedSections);
+      
+      // Format untuk dikirim ke server
+      const updatedGeneratedSections = {
+        ...(prd.generated_sections || {}),
+        custom_sections: {
+          sections: updatedSections
+        }
+      };
+      
+      // Save ke database setelah delete
+      const payload = {
+        ...prd,
+        generated_sections: updatedGeneratedSections
+      };
+      
+      // Hapus custom_sections dari root payload
+      delete payload.custom_sections;
+      delete payload.id;
+      delete payload.user_id;
+      delete payload.created_at;
+      delete payload.updated_at;
+      
+      const response = await updatePRD(id, payload);
+      
+      if (response?.status === 'success' && response.data) {
+        setPRD(response.data);
+        
+        // Extract custom sections dari response
+        if (response.data.generated_sections?.custom_sections?.sections) {
+          setCustomSections(response.data.generated_sections.custom_sections.sections);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete custom section:', err);
+      setSaveError('Failed to delete custom section: ' + (err.message || 'Unknown error'));
+    }
   };
 
   // Section management for built-in sections
