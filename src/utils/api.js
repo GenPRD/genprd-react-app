@@ -3,18 +3,20 @@ import axios from 'axios'
 const API_BASE_URL = import.meta.env.VITE_API_URL
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_BASE_URL || 'http://localhost:3000/api',
   headers: {
     'Content-Type': 'application/json',
   },
+  // Tambahkan withCredentials jika menggunakan cookies
+  withCredentials: true
 })
 
-// Add request interceptor to include auth token
+// Add request interceptor to include token from localStorage in every request
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('jwt_token')
+    const token = localStorage.getItem('auth_token')
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers['Authorization'] = `Bearer ${token}`
     }
     return config
   },
@@ -23,49 +25,45 @@ api.interceptors.request.use(
   }
 )
 
-// Add response interceptor to handle auth errors and token refresh
+// Add response interceptor to handle token expiry
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response
+  },
   async (error) => {
     const originalRequest = error.config
 
+    // If error is 401 and not a retry request
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
 
-      // Try to refresh the token
-      const refreshToken = localStorage.getItem('refresh_token')
-      if (refreshToken) {
-        try {
-          console.log('🔄 Attempting token refresh...')
-          const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refresh_token: refreshToken
-          })
-
-          if (response.data.status === 'success') {
-            const newToken = response.data.access_token
-            localStorage.setItem('jwt_token', newToken)
-            console.log('✅ Token refreshed successfully')
-
-            // Retry the original request with new token
-            originalRequest.headers.Authorization = `Bearer ${newToken}`
-            return api(originalRequest)
-          }
-        } catch (refreshError) {
-          console.error('❌ Token refresh failed:', refreshError)
-          // Refresh failed, redirect to login
-          localStorage.removeItem('jwt_token')
-          localStorage.removeItem('refresh_token')
-          localStorage.removeItem('user_data')
-          window.location.href = '/login?error=session_expired'
-          return Promise.reject(refreshError)
-        }
+      try {
+        // Try to refresh token - customize this as per your API
+        // const refreshResponse = await axios.post('/auth/refresh', {}, {
+        //   withCredentials: true
+        // });
+        
+        // If token refresh successful
+        // const newToken = refreshResponse.data.token;
+        // localStorage.setItem('auth_token', newToken);
+        
+        // Retry original request with new token
+        // originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+        // return api(originalRequest);
+        
+        // For now, just redirect to login
+        console.warn('Session expired, redirecting to login...')
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        window.location.href = '/login'
+        
+      } catch (refreshError) {
+        // If refresh fails, redirect to login
+        console.error('Failed to refresh authentication:', refreshError)
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        window.location.href = '/login'
       }
-
-      // No refresh token or refresh failed
-      localStorage.removeItem('jwt_token')
-      localStorage.removeItem('refresh_token')
-      localStorage.removeItem('user_data')
-      window.location.href = '/login?error=unauthorized'
     }
 
     return Promise.reject(error)

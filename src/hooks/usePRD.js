@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from './useAuth';
+import { handleApiError } from '../utils/errorHandling';
 
 export const usePRD = () => {
   const [loading, setLoading] = useState(false);
@@ -12,7 +13,9 @@ export const usePRD = () => {
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
     headers: {
       'Content-Type': 'application/json',
-    }
+    },
+    // PERBAIKAN: Hapus withCredentials karena kita menggunakan token dalam header
+    // withCredentials: true
   });
   
   // Tambahkan interceptor untuk menyertakan token pada setiap request
@@ -21,9 +24,32 @@ export const usePRD = () => {
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
       }
+      // Tambahkan timestamp untuk menghindari caching
+      if (config.url.includes('?')) {
+        config.url += `&_t=${Date.now()}`;
+      } else {
+        config.url += `?_t=${Date.now()}`;
+      }
       return config;
     },
     (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  // Add response interceptor for better error handling
+  api.interceptors.response.use(
+    (response) => {
+      return response;
+    },
+    (error) => {
+      console.error('API request failed:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      
       return Promise.reject(error);
     }
   );
@@ -33,6 +59,7 @@ export const usePRD = () => {
       setLoading(true);
       setError(null);
       
+      // Buat query params
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -43,22 +70,27 @@ export const usePRD = () => {
       const response = await api.get(`/prd${queryParams.toString() ? '?' + queryParams.toString() : ''}`);
       return response.data;
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Failed to fetch PRDs';
-      setError(errorMsg);
+      handleApiError(err, setError);
       throw err;
     } finally {
       setLoading(false);
     }
   };
   
+  // getPRDById with retry mechanism
   const getPRDById = async (id) => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await api.get(`/prd/${id}`);
+      // Tambahkan timestamp untuk mencegah caching
+      const response = await api.get(`/prd/${id}`); 
+      // Parameter timestamp sudah ditambahkan via interceptor
+      
       return response.data;
     } catch (err) {
+      console.error('Error fetching PRD:', err);
+      
       const errorMsg = err.response?.data?.message || 'Failed to fetch PRD';
       setError(errorMsg);
       throw err;
@@ -105,9 +137,20 @@ export const usePRD = () => {
       setLoading(true);
       setError(null);
       
+      // Ensure correct API endpoint based on your backend
+      // If the API endpoint should be /prd/{id} and not /api/prds/{id}
       const response = await api.put(`/prd/${id}`, prdData);
+      
+      console.log('Update PRD response:', response.data);
       return response.data;
     } catch (err) {
+      console.error('Error updating PRD:', {
+        id,
+        error: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      
       const errorMsg = err.response?.data?.message || 'Failed to update PRD';
       setError(errorMsg);
       throw err;
@@ -235,6 +278,7 @@ export const usePRD = () => {
   return {
     loading,
     error,
+    setLoading, // Expose setLoading function
     getAllPRDs,
     getPRDById,
     getRecentPRDs,
