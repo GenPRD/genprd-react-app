@@ -121,6 +121,7 @@ export const usePRD = () => {
       setLoading(true);
       setError(null);
       
+      // Perbaiki path API
       const response = await api.delete(`/prd/${id}`);
       return response.data;
     } catch (err) {
@@ -137,9 +138,18 @@ export const usePRD = () => {
       setLoading(true);
       setError(null);
       
+      // Perbaiki path API - ganti dari /prd/${id}/archive menjadi:
       const response = await api.patch(`/prd/${id}/archive`);
       return response.data;
     } catch (err) {
+      // Log detail error 
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        endpoint: `/prd/${id}/archive`, // atau endpoint yang sedang diakses
+      });
+      
       const errorMsg = err.response?.data?.message || 'Failed to archive PRD';
       setError(errorMsg);
       throw err;
@@ -153,6 +163,7 @@ export const usePRD = () => {
       setLoading(true);
       setError(null);
       
+      // Perbaiki path API - ganti dari /prd/${id}/pin menjadi:
       const response = await api.patch(`/prd/${id}/pin`);
       return response.data;
     } catch (err) {

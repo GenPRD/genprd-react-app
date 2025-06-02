@@ -8,6 +8,7 @@ import {
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import { usePRD } from '../../hooks/usePRD';
+import { PRD_EVENTS } from '../../utils/events';
 import logoImage from '../../assets/genprd_logo.svg';
 
 const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
@@ -23,16 +24,15 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
   // Use a ref to track if we've already fetched data
   const dataFetched = useRef(false);
 
-  // Fetch PRD data only once on component mount
+  // Clean up on unmount
   useEffect(() => {
-    // Set isMounted to false on cleanup
     return () => {
       isMounted.current = false;
     };
   }, []);
 
+  // Initial data fetch
   useEffect(() => {
-    // Only fetch if we haven't already fetched and component is mounted
     if (!dataFetched.current && isMounted.current) {
       const fetchPRDs = async () => {
         try {
@@ -49,17 +49,17 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
             const prdsArray = result.data.prds || [];
             
             if (Array.isArray(prdsArray)) {
-              // Sort by updated_at for recent PRDs
-              const sortedPRDs = [...prdsArray].sort((a, b) => 
-                new Date(b.updated_at || Date.now()) - new Date(a.updated_at || Date.now())
-              );
-              
               // Get pinned PRDs
               const pinned = prdsArray.filter(prd => prd.is_pinned === true);
               
-              // Set states - no limit on pinned, up to 25 for recent
-              setPinnedPRDs(pinned); // No limit on pinned PRDs
-              setRecentPRDs(sortedPRDs.slice(0, 25)); // Limit to 25 recent PRDs
+              // Get recent PRDs (excluding pinned ones)
+              const unpinnedPRDs = prdsArray.filter(prd => !prd.is_pinned);
+              const sortedUnpinned = [...unpinnedPRDs].sort((a, b) => 
+                new Date(b.updated_at || Date.now()) - new Date(a.updated_at || Date.now())
+              );
+              
+              setPinnedPRDs(pinned);
+              setRecentPRDs(sortedUnpinned.slice(0, 25)); // Limit to 25 recent PRDs
               setDataError(null);
             } else {
               console.error('PRDs data is not an array:', prdsArray);
@@ -70,17 +70,14 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
             setDataError('Failed to fetch PRDs');
           }
         } catch (err) {
-          // Guard clause to prevent state updates if component unmounted
           if (!isMounted.current) return;
           
           console.error('Error fetching PRDs for sidebar:', err);
           setDataError('Failed to load PRDs');
         } finally {
-          // Guard clause to prevent state updates if component unmounted
           if (!isMounted.current) return;
           
           setLoading(false);
-          // Mark as fetched to prevent additional fetches
           dataFetched.current = true;
         }
       };
@@ -88,6 +85,75 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
       fetchPRDs();
     }
   }, [getAllPRDs]);
+
+  // Listen for PIN_TOGGLED events - with stable modification to avoid flicker
+  useEffect(() => {
+    const handlePinToggle = (e) => {
+      const { prd } = e.detail;
+      console.log('Sidebar received pin toggle event:', prd);
+      
+      if (prd) {
+        // Update pinnedPRDs
+        setPinnedPRDs(current => {
+          // If PRD is now pinned and not in list yet, add it
+          if (prd.is_pinned) {
+            const exists = current.some(p => p.id === prd.id);
+            if (!exists) {
+              return [...current, prd];
+            }
+          } else {
+            // If PRD is now unpinned, remove it from pinnedPRDs
+            return current.filter(p => p.id !== prd.id);
+          }
+          return current;
+        });
+        
+        // Update recentPRDs (exclude pinned from recent)
+        setRecentPRDs(current => {
+          // If PRD is now pinned, remove it from recentPRDs
+          if (prd.is_pinned) {
+            return current.filter(p => p.id !== prd.id);
+          } 
+          // If PRD is now unpinned, add it to recentPRDs if it's not there
+          else {
+            const exists = current.some(p => p.id === prd.id);
+            if (!exists) {
+              // Add to beginning of recent and trim if needed
+              const updatedRecent = [prd, ...current].slice(0, 25);
+              return updatedRecent;
+            }
+          }
+          return current;
+        });
+      }
+    };
+    
+    const handleArchiveToggle = (e) => {
+      const { prd } = e.detail;
+      console.log('Sidebar received archive toggle event:', prd);
+      
+      if (prd) {
+        // Update both recent and pinned lists with the new document_stage
+        setPinnedPRDs(current => 
+          current.map(p => p.id === prd.id ? { ...p, document_stage: prd.document_stage } : p)
+        );
+        
+        setRecentPRDs(current => 
+          current.map(p => p.id === prd.id ? { ...p, document_stage: prd.document_stage } : p)
+        );
+      }
+    };
+    
+    // Add event listeners
+    document.addEventListener(PRD_EVENTS.PIN_TOGGLED, handlePinToggle);
+    document.addEventListener(PRD_EVENTS.ARCHIVE_TOGGLED, handleArchiveToggle);
+    
+    // Clean up
+    return () => {
+      document.removeEventListener(PRD_EVENTS.PIN_TOGGLED, handlePinToggle);
+      document.removeEventListener(PRD_EVENTS.ARCHIVE_TOGGLED, handleArchiveToggle);
+    };
+  }, []);
 
   const isActive = (path) => {
     if (path === '/dashboard') {
@@ -102,10 +168,10 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
     }
   };
 
-  // JSX rendering remains the same, just update loading check
+  // Check if loading
   const isLoading = loading || apiLoading;
 
-  // This is the scrollable area container reference
+  // Scrollable area container reference
   const scrollContainerRef = useRef(null);
 
   return (
@@ -174,7 +240,7 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
         </Link>
       </nav>
 
-      {/* Section divider - Outside scrollable area */}
+      {/* Section divider */}
       <div className="px-5 py-3 flex-shrink-0">
         <div className="h-px bg-gray-200"></div>
       </div>
@@ -225,7 +291,6 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
         
         {/* RECENT section - no icons, simplified */}
         <div className="px-5 mt-6">
-          {/* Header without "See all" link */}
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
             RECENT
           </h3>

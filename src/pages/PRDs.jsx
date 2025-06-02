@@ -16,6 +16,7 @@ import PRDCard from '../components/prd/PRDCard';
 import PRDFilters from '../components/prd/PRDFilters';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 import ContextMenu from '../components/common/ContextMenu';
+import { emitEvent, PRD_EVENTS } from '../utils/events';
 
 const PRDs = () => {
   const { user } = useAuth();
@@ -129,11 +130,34 @@ const PRDs = () => {
   const handleArchive = async (prd) => {
     try {
       setActionLoading(true);
-      await archivePRD(prd.id);
-      setPrds(prds.map(p => 
-        p.id === prd.id ? { ...p, document_stage: 'archived' } : p
-      ));
-      setShowArchiveModal(false);
+      console.log('Archiving PRD with ID:', prd.id);
+      const response = await archivePRD(prd.id);
+      console.log('Archive response:', response);
+      
+      if (response && response.status === 'success') {
+        // Update local state dengan stage yang sudah diperbarui dari response
+        const newStage = response.data.document_stage || 
+          (prd.document_stage === 'archived' ? 'draft' : 'archived');
+        
+        // Buat objek PRD yang sudah diupdate
+        const updatedPrd = {
+          ...prd,
+          document_stage: newStage
+        };
+        
+        setPrds(prds.map(p => 
+          p.id === prd.id ? updatedPrd : p
+        ));
+        
+        // Emit event after successful archive/unarchive
+        emitEvent(PRD_EVENTS.ARCHIVE_TOGGLED, { prd: updatedPrd });
+        
+        setShowArchiveModal(false);
+        setActionPRD(null);
+      } else {
+        console.warn('Unexpected API response:', response);
+        setActionError('Failed to archive PRD. Unexpected response from server.');
+      }
     } catch (error) {
       console.error('Error archiving PRD:', error);
       setActionError(error.message || 'Failed to archive PRD');
@@ -145,11 +169,30 @@ const PRDs = () => {
   const handlePin = async (prd) => {
     try {
       setActionLoading(true);
+      console.log('Toggling pin status for PRD with ID:', prd.id);
       const response = await togglePinPRD(prd.id);
-      if (response.status === 'success') {
+      console.log('Pin toggle response:', response);
+      
+      if (response && response.status === 'success') {
+        // Update local state dengan is_pinned dari response atau toggle nilai saat ini
+        const newPinnedStatus = response.data?.is_pinned ?? !prd.is_pinned;
+        
+        // Buat objek PRD yang sudah diupdate
+        const updatedPrd = {
+          ...prd,
+          is_pinned: newPinnedStatus
+        };
+        
+        // Update state prds
         setPrds(prds.map(p => 
-          p.id === prd.id ? { ...p, is_pinned: !p.is_pinned } : p
+          p.id === prd.id ? updatedPrd : p
         ));
+
+        // Emit event after successful pin toggle with updatedPrd
+        emitEvent(PRD_EVENTS.PIN_TOGGLED, { prd: updatedPrd });
+      } else {
+        console.warn('Unexpected API response:', response);
+        setActionError('Failed to update pin status. Unexpected response from server.');
       }
     } catch (error) {
       console.error('Error toggling pin status:', error);
