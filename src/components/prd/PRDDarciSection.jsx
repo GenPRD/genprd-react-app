@@ -1,114 +1,165 @@
-import React from 'react';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import React, { useState } from 'react';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
-const PRDDarciSection = ({ prd, isEditing, onSectionChange, onRemoveSection, onAddSection }) => {
-  const roles = prd.generated_sections?.darci?.roles || [];
-  
-  const roleLabels = {
-    'decider': 'Decider',
-    'accountable': 'Accountable',
-    'responsible': 'Responsible',
-    'consulted': 'Consulted',
-    'informed': 'Informed'
+// Mapping for DARCI role descriptions
+const DARCI_ROLES = {
+  'decider': 'Decider (D)',
+  'accountable': 'Accountable (A)',
+  'responsible': 'Responsible (R)',
+  'consulted': 'Consulted (C)',
+  'informed': 'Informed (I)'
+};
+
+// Helper function to ensure DARCI roles exist
+const ensureAllRolesExist = (roles = []) => {
+  return Object.keys(DARCI_ROLES).map(roleKey => {
+    const existingRole = roles.find(r => r.name === roleKey);
+    return existingRole || {
+      name: roleKey,
+      members: [],
+      guidelines: ''
+    };
+  });
+};
+
+// Component for managing members with tag-like interface
+const MembersInput = ({ value = [], onChange }) => {
+  const [inputValue, setInputValue] = useState('');
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && inputValue.trim()) {
+      e.preventDefault();
+      const newMembers = [...value, inputValue.trim()];
+      onChange(newMembers);
+      setInputValue('');
+    } else if (e.key === 'Backspace' && !inputValue && value.length > 0) {
+      // Remove last tag when backspace is pressed on empty input
+      const newMembers = value.slice(0, -1);
+      onChange(newMembers);
+    }
   };
-  
+
+  return (
+    <div className="flex flex-wrap gap-2 min-h-[42px] w-full rounded-md border border-gray-300 bg-white p-2">
+      {value.map((member, index) => (
+        <span
+          key={index}
+          className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800"
+        >
+          {member}
+          <button
+            type="button"
+            onClick={() => {
+              const newMembers = value.filter((_, i) => i !== index);
+              onChange(newMembers);
+            }}
+            className="ml-1.5 inline-flex items-center justify-center h-5 w-5 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-500 focus:outline-none"
+          >
+            <XMarkIcon className="h-3 w-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        type="text"
+        className="flex-1 min-w-[120px] outline-none text-sm bg-transparent"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={value.length === 0 ? "Type name and press Enter..." : "Press Enter to add more..."}
+      />
+    </div>
+  );
+};
+
+const PRDDarciSection = ({
+  prd,
+  isEditing,
+  onSectionChange
+}) => {
+  const roles = prd.generated_sections?.darci?.roles || [];
+  const ensuredRoles = ensureAllRolesExist(roles);
+
+  const getRoleName = (roleKey) => DARCI_ROLES[roleKey] || roleKey;
+
   return (
     <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="px-8 py-5 border-b border-gray-200">
         <h2 className="text-lg font-medium text-gray-900">DARCI Roles</h2>
       </div>
-      
+
       <div className="overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead>
-            <tr className="bg-gray-50">
-              <th scope="col" className="px-8 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-              <th scope="col" className="px-8 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Members</th>
-              <th scope="col" className="px-8 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guidelines</th>
-              {isEditing && <th scope="col" className="px-8 py-3.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"></th>}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {roles.map((role, idx) => {
-              const roleName = role.name || '';
-              
-              return (
-                <tr key={idx}>
-                  <td className="px-8 py-5 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 capitalize">
-                      {isEditing ? (
-                        <select 
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm p-3"
-                          value={roleName}
-                          onChange={(e) => onSectionChange('darci', idx, 'name', e.target.value)}
-                        >
-                          {Object.entries(roleLabels).map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        roleLabels[roleName] || roleName
-                      )}
-                    </div>
+        <div className="px-8 py-5">
+          <table className="min-w-full">
+            <thead>
+              <tr>
+                <th scope="col" className="w-1/5 py-3 text-left text-sm font-medium text-gray-900">
+                  Role
+                </th>
+                <th scope="col" className="w-2/5 py-3 text-left text-sm font-medium text-gray-900">
+                  Members
+                </th>
+                <th scope="col" className="w-2/5 py-3 text-left text-sm font-medium text-gray-900">
+                  Guidelines
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {ensuredRoles.map((role, idx) => (
+                <tr key={role.name} className="align-top">
+                  <td className="py-4 pr-4">
+                    <span className="text-sm font-medium text-gray-900">
+                      {getRoleName(role.name)}
+                    </span>
                   </td>
-                  <td className="px-8 py-5">
-                    <div className="text-sm text-gray-700">
-                      {isEditing ? (
-                        <input 
-                          type="text" 
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm p-3" 
-                          value={role.members?.join(', ') || ''}
-                          onChange={(e) => onSectionChange('darci', idx, 'members', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                          placeholder="Enter members (comma separated)"
-                        />
-                      ) : (
-                        role.members?.join(', ') || '-'
-                      )}
-                    </div>
+                  <td className="py-4 pr-8">
+                    {isEditing ? (
+                      <MembersInput
+                        value={role.members || []}
+                        onChange={(newMembers) => {
+                          onSectionChange('darci', idx, 'members', newMembers);
+                        }}
+                      />
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {(role.members || []).map((member, midx) => (
+                          <span
+                            key={midx}
+                            className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800"
+                          >
+                            {member}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
-                  <td className="px-8 py-5">
-                    <div className="text-sm text-gray-700">
-                      {isEditing ? (
-                        <textarea 
-                          rows={2}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm p-3"
+                  <td className="py-4">
+                    {isEditing ? (
+                      <div className="w-full">
+                        <textarea
                           value={role.guidelines || ''}
-                          onChange={(e) => onSectionChange('darci', idx, 'guidelines', e.target.value)}
-                          placeholder="Guidelines for this role"
+                          onChange={(e) =>
+                            onSectionChange('darci', idx, 'guidelines', e.target.value)
+                          }
+                          className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm resize-y"
+                          rows={3}
+                          style={{ 
+                            minHeight: '80px',
+                            maxHeight: '200px'
+                          }}
+                          placeholder={`Enter guidelines for ${getRoleName(role.name)}...`}
                         />
-                      ) : (
-                        role.guidelines || '-'
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                        {role.guidelines || ''}
+                      </div>
+                    )}
                   </td>
-                  {isEditing && (
-                    <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
-                      <button 
-                        onClick={() => onRemoveSection('darci', idx)} 
-                        className="text-red-600 hover:text-red-800 font-medium"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  )}
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        
-        {isEditing && (
-          <div className="px-8 py-5 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={() => onAddSection('darci')}
-              className="inline-flex items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-all"
-            >
-              <PlusIcon className="w-5 h-5 mr-2" />
-              Add Role
-            </button>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
