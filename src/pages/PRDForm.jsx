@@ -350,7 +350,7 @@ const PRDForm = () => {
       </div>
       
       {/* Loading overlay */}
-      {loading && <PRDLoadingOverlay step={step} />}
+      <PRDLoadingOverlay isVisible={loading} />
     </div>
   );
 };

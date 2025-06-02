@@ -109,7 +109,7 @@ const Sidebar = ({ isMobile = false, onCloseMobile = () => {} }) => {
   const scrollContainerRef = useRef(null);
 
   return (
-    <aside className="w-64 bg-white h-full flex flex-col flex-shrink-0 border-r border-gray-200 shadow-sm">
+    <aside className="w-64 bg-white h-full flex flex-col flex-shrink-0 border-r border-gray-200 shadow-sm z-10">
       {/* Logo section - Outside scrollable area */}
       <div className="p-5 flex items-center flex-shrink-0">
         <img 

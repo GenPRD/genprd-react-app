@@ -38,6 +38,13 @@ const PRDCard = ({ prd, onPin, onArchive, onDelete, onDownload, onMenuClick }) =
   };
 
   const { bg, text } = getStageColor(prd.document_stage);
+  
+  // Handler to prevent propagation to parent elements
+  const handleMenuButtonClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onMenuClick(e);
+  };
 
   return (
     <div 
@@ -56,7 +63,11 @@ const PRDCard = ({ prd, onPin, onArchive, onDelete, onDownload, onMenuClick }) =
         </div>
         <div className="flex items-center ml-4">
           <button 
-            onClick={onPin}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onPin(prd);
+            }}
             className={`text-gray-400 hover:text-yellow-500 focus:outline-none ${prd.is_pinned ? 'text-yellow-500' : ''}`}
             title={prd.is_pinned ? "Unpin PRD" : "Pin PRD"}
           >
@@ -68,9 +79,10 @@ const PRDCard = ({ prd, onPin, onArchive, onDelete, onDownload, onMenuClick }) =
           </button>
           <div className="relative ml-2">
             <button
-              onClick={onMenuClick}
-              className="p-1 text-gray-400 hover:text-gray-600 focus:outline-none"
+              onClick={handleMenuButtonClick}
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-200"
               title="Options"
+              aria-label="PRD options"
             >
               <EllipsisHorizontalIcon className="w-5 h-5" />
             </button>

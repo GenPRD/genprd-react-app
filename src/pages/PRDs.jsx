@@ -195,20 +195,20 @@ const PRDs = () => {
     }
   };
 
-  const handleMenuClick = (event) => {
-    // Get the position of the click
+  const handleMenuClick = (event, prd) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Get the position of the click relative to the viewport
     const rect = event.currentTarget.getBoundingClientRect();
-    const prd = event.currentTarget.closest('[data-prd-id]')?.dataset?.prdId 
-      ? filteredPrds.find(p => p.id === parseInt(event.currentTarget.closest('[data-prd-id]').dataset.prdId))
-      : null;
     
     if (!prd) return;
     
     setContextMenu({
       isOpen: true,
       position: {
-        x: rect.left,
-        y: rect.bottom
+        x: rect.right - 5, // Position near the right edge of button
+        y: rect.bottom + 5 // Position slightly below button
       },
       prd
     });
@@ -269,13 +269,17 @@ const PRDs = () => {
 
   return (
     <div className="w-full">
-      {/* Header Section */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900">All PRDs</h1>
-        <p className="text-gray-600 mt-1">
-          Manage and organize your Product Requirements Documents
-        </p>
-        <div className="mt-6">
+      {/* Header Section - Updated layout with flex to align title and button */}
+      <div className="mb-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">All PRDs</h1>
+            <p className="text-gray-600 mt-1">
+              Manage and organize your Product Requirements Documents
+            </p>
+          </div>
+          
+          {/* Create New PRD button - now positioned to the right */}
           <Link
             to="/prds/new"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-900 hover:bg-gray-800"
@@ -295,7 +299,7 @@ const PRDs = () => {
 
       {/* Error State */}
       {(apiError || actionError) && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-8">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
           <p className="font-medium">Error</p>
           <p className="text-sm">{apiError || actionError}</p>
           <button
@@ -313,7 +317,7 @@ const PRDs = () => {
       {/* Content */}
       {!apiLoading && (
         <>
-          {/* Filters */}
+          {/* Filters - Moved up with less bottom margin */}
           <PRDFilters
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -329,7 +333,7 @@ const PRDs = () => {
               isFiltered={prds.length > 0 && filteredPrds.length === 0}
             />
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
               {filteredPrds.map(prd => (
                 <motion.div
                   key={prd.id}
@@ -342,7 +346,7 @@ const PRDs = () => {
                   <PRDCard
                     prd={prd}
                     onPin={() => handlePin(prd)}
-                    onMenuClick={handleMenuClick}
+                    onMenuClick={(e) => handleMenuClick(e, prd)}
                     onArchive={() => {
                       setActionPRD(prd);
                       setShowArchiveModal(true);
@@ -367,12 +371,13 @@ const PRDs = () => {
         </>
       )}
 
-      {/* Context Menu */}
+      {/* Context Menu - Updated to fix positioning */}
       <ContextMenu
         isOpen={contextMenu.isOpen}
         position={contextMenu.position}
         items={contextMenu.prd ? renderContextMenuItems(contextMenu.prd) : []}
         onClose={handleContextMenuClose}
+        className="z-50 shadow-lg"
       />
 
       {/* Delete Confirmation Modal */}
@@ -381,11 +386,9 @@ const PRDs = () => {
         title="Delete PRD"
         message={
           <span>
-            Are you sure you want to delete the PRD "
-            <span className="font-semibold text-gray-700">
+            Are you sure you want to delete the PRD "<span className="font-semibold text-gray-700">
               {actionPRD?.product_name}
-            </span>
-            "? This action cannot be undone.
+            </span>"? This action cannot be undone.
           </span>
         }
         icon={<TrashIcon className="h-6 w-6 text-red-600" aria-hidden="true" />}
@@ -404,11 +407,9 @@ const PRDs = () => {
         title={actionPRD?.document_stage === 'archived' ? "Unarchive PRD" : "Archive PRD"}
         message={
           <span>
-            Are you sure you want to {actionPRD?.document_stage === 'archived' ? "unarchive" : "archive"} the PRD "
-            <span className="font-semibold text-gray-700">
+            Are you sure you want to {actionPRD?.document_stage === 'archived' ? "unarchive" : "archive"} the PRD "<span className="font-semibold text-gray-700">
               {actionPRD?.product_name}
-            </span>
-            "?
+            </span>"?
           </span>
         }
         icon={<ArchiveBoxIcon className="h-6 w-6 text-amber-600" aria-hidden="true" />}
