@@ -8,7 +8,8 @@ import {
   ChevronLeftIcon, 
   XMarkIcon,
   SparklesIcon,
-  ShieldExclamationIcon
+  ShieldExclamationIcon,
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 
 // Import komponen yang sudah dipecah
@@ -187,21 +188,15 @@ const PRDForm = () => {
         
         if (!formData.start_date) {
           isValid = false;
-          // REMOVED: Don't set form error for step 4 - let inline validation handle it
-          // setFormError('Start date is required');
         }
         
         if (!formData.end_date) {
           isValid = false;
-          // REMOVED: Don't set form error for step 4 - let inline validation handle it
-          // setFormError('End date is required');
         }
         
         if (formData.start_date && formData.end_date && 
             new Date(formData.start_date) > new Date(formData.end_date)) {
           isValid = false;
-          // REMOVED: Don't set form error for step 4 - let inline validation handle it
-          // setFormError('Start date cannot be after end date');
         }
         
         return isValid;
@@ -267,10 +262,22 @@ const PRDForm = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Create New PRD</h1>
-        <p className="text-gray-600 mt-1">Let AI help you create a comprehensive Product Requirements Document</p>
+    <div className="max-w-6xl mx-auto w-full"> {/* Increased max-width from 4xl to 6xl */}
+      {/* Header with back button */}
+      <div className="mb-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <Link 
+              to="/prds"
+              className="inline-flex items-center text-gray-600 hover:text-gray-900 font-medium mb-3"
+            >
+              <ArrowLeftIcon className="w-4 h-4 mr-2" />
+              Back to PRDs
+            </Link>
+            <h1 className="text-2xl font-bold text-gray-900">Create New PRD</h1>
+            <p className="text-gray-600 mt-1">Let AI help you create a comprehensive Product Requirements Document</p>
+          </div>
+        </div>
       </div>
       
       {/* API Error banner */}
@@ -291,9 +298,9 @@ const PRDForm = () => {
       <PRDFormProgress progressSteps={progressSteps} currentStep={step} />
       
       {/* Main form */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm"> {/* Increased padding from p-6 to p-8 */}
         <form onSubmit={handleSubmit}>
-          {/* IMPORTANT: Only show form error banner for non-Timeline steps */}
+          {/* Form error banner for non-Timeline steps */}
           {formError && step !== 4 && (
             <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded">
               <div className="flex items-center">
@@ -320,12 +327,7 @@ const PRDForm = () => {
                 <ChevronLeftIcon className="w-5 h-5 mr-1" /> Back
               </button>
             ) : (
-              <Link 
-                to="/prds"
-                className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-              >
-                <ChevronLeftIcon className="w-5 h-5 mr-1" /> Cancel
-              </Link>
+              <div>{/* Empty div to maintain spacing with flex-justify-between */}</div>
             )}
             
             {step < progressSteps.length ? (

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react'; // tambahkan useRef
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { useTestAPI } from '../hooks/useApi';
@@ -38,12 +38,21 @@ const staggerContainer = {
 const Homepage = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const { testConnection } = useTestAPI();
+  const connectionChecked = useRef(false); // Track if connection was already checked
 
   useEffect(() => {
-    testConnection().then(
-      () => console.log('API Connected'),
-      (error) => console.log('API Offline', error)
-    );
+    // Hanya jalankan sekali per render lifecycle dan hanya jika belum diperiksa
+    if (!connectionChecked.current) {
+      connectionChecked.current = true;
+      // Tambahkan delay kecil untuk menghindari overload saat halaman pertama kali dimuat
+      const timer = setTimeout(() => {
+        testConnection()
+          .then(() => console.log('API Connected'))
+          .catch((error) => console.log('API Offline', error));
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
   }, [testConnection]);
 
   // Features section data
