@@ -36,8 +36,11 @@ const PRDOverviewSection = ({ prd, isEditing, onChange, onAddSection, onRemoveSe
             />
           </div>
         ) : (
-          <div className="prose max-w-none mb-7">
-            <p className="whitespace-pre-line text-gray-700">{prd.project_overview}</p>
+          <div className="mb-7">
+            <h3 className="text-base font-medium text-gray-900 mb-3">Project Overview</h3>
+            <div className="prose max-w-none">
+              <p className="whitespace-pre-line text-gray-700">{prd.project_overview}</p>
+            </div>
           </div>
         )}
         
