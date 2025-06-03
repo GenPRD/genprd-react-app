@@ -9,13 +9,14 @@ import LoadingSpinner from '../components/auth/LoadingSpinner';
 import PRDDetailHeader from '../components/prd/PRDDetailHeader';
 import PRDIdentitySection from '../components/prd/PRDIdentitySection';
 import PRDOverviewSection from '../components/prd/PRDOverviewSection';
-import PRDDarciSection from '../components/prd/PRDDarciSection'; 
+import PRDDarciSection from '../components/prd/PRDDarciSection';
 import PRDUserStoriesSection from '../components/prd/PRDUserStoriesSection';
 import PRDMetricsSection from '../components/prd/PRDMetricsSection';
 import PRDTimelineSection from '../components/prd/PRDTimelineSection';
 import PRDCustomSection from '../components/prd/PRDCustomSection';
 import PRDSectionToolbar from '../components/prd/PRDSectionToolbar';
 import ConfirmationModal from '../components/common/ConfirmationModal';
+import Toast from '../components/common/Toast'; // Import Toast component
 
 // Fungsi untuk menggantikan uuidv4
 const generateUUID = () => {
@@ -29,16 +30,16 @@ const generateUUID = () => {
 const PRDDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { 
-    getPRDById, 
-    updatePRD, 
-    deletePRD, 
+  const {
+    getPRDById,
+    updatePRD,
+    deletePRD,
     archivePRD,
     updatePRDStage, // Make sure this is imported
     downloadPRD,
     setLoading: setApiLoading // Expose setLoading from hook
   } = usePRD();
-  
+
   const [prd, setPRD] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -47,7 +48,28 @@ const PRDDetail = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [customSections, setCustomSections] = useState([]);
-  
+
+  // State for Toast messages
+  const [toastState, setToastState] = useState({
+    isVisible: false,
+    message: '',
+    type: 'success',
+  });
+
+  // Helper to show toast
+  const showToast = (message, type = 'success') => {
+    setToastState({
+      isVisible: true,
+      message,
+      type,
+    });
+  };
+
+  // Helper to hide toast
+  const hideToast = () => {
+    setToastState(prev => ({ ...prev, isVisible: false }));
+  };
+
   // Prevent multiple fetches with useRef
   const dataFetched = useRef(false);
   const requestInProgress = useRef(false);
@@ -56,12 +78,12 @@ const PRDDetail = () => {
   // Fetch PRD data only once
   useEffect(() => {
     isMounted.current = true;
-    
+
     // Reset data fetch state when ID changes
     if (id) {
       dataFetched.current = false;
     }
-    
+
     return () => {
       isMounted.current = false;
     };
@@ -77,15 +99,15 @@ const PRDDetail = () => {
           // Prevent usePRD from also showing its own loading state
           setApiLoading(false);
           setError(null);
-          
+
           const response = await getPRDById(id);
-          
+
           // Guard clause to prevent state updates if component unmounted
           if (!isMounted.current) return;
-          
+
           if (response?.status === 'success') {
             setPRD(response.data);
-            
+
             // Check for custom sections in generated_sections
             if (response.data.generated_sections?.custom_sections?.sections) {
               setCustomSections(response.data.generated_sections.custom_sections.sections);
@@ -95,13 +117,15 @@ const PRDDetail = () => {
             }
           } else {
             setError('Failed to load PRD');
+            showToast('Failed to load PRD', 'error'); // Show error toast
           }
           dataFetched.current = true;
         } catch (err) {
           if (!isMounted.current) return;
-          
+
           console.error('Error loading PRD:', err);
           setError(err.message || 'Failed to load PRD');
+          showToast(err.message || 'Failed to load PRD', 'error'); // Show error toast
         } finally {
           if (isMounted.current) {
             setLoading(false);
@@ -109,7 +133,7 @@ const PRDDetail = () => {
           requestInProgress.current = false;
         }
       };
-      
+
       fetchPRD();
     }
   }, [id, getPRDById, setApiLoading]);
@@ -124,10 +148,14 @@ const PRDDetail = () => {
           if (response.data.custom_sections) {
             setCustomSections(response.data.custom_sections);
           }
+          showToast('Changes saved successfully', 'success'); // Show success toast on debounced save
+        } else {
+           showToast('Failed to save changes', 'error'); // Show error toast
         }
       } catch (err) {
         console.error('Failed to save changes:', err);
         setSaveError('Failed to save changes');
+        showToast('Failed to save changes', 'error'); // Show error toast
       }
     }, 1000)
   ).current;
@@ -178,10 +206,10 @@ const PRDDetail = () => {
        } else {
          current[lastKey] = value;
        }
-      
+
       // Trigger debounced save for any change
       debouncedUpdate(updated);
-      
+
       return updated;
     });
   };
@@ -190,23 +218,26 @@ const PRDDetail = () => {
     // If changes is an object (updating fields)
     if (typeof changes === 'object') {
       console.log('Received changes:', changes); // Debug log
-      
+
       // Update local state immediately for UI responsiveness
       setPRD(prev => ({
         ...prev,
         ...changes
       }));
-      
+
       // Save changes to server
       try {
         const response = await updatePRD(id, {
           ...prd, // Include current PRD data
           ...changes // Overlay with new changes
         });
-        
+
         if (response?.status === 'success' && response.data) {
           // Update state with server response to ensure consistency
           setPRD(response.data);
+          showToast('PRD updated successfully', 'success'); // Show success toast
+        } else {
+           showToast('Failed to update PRD', 'error'); // Show error toast
         }
       } catch (err) {
         console.error('Failed to save changes:', err);
@@ -217,6 +248,7 @@ const PRDDetail = () => {
           document_version: prd.document_version
         }));
         setSaveError('Failed to save changes');
+        showToast('Failed to update PRD', 'error'); // Show error toast
       }
     } else {
       // Just toggle edit mode
@@ -227,21 +259,25 @@ const PRDDetail = () => {
   // Handle delete
   const handleDelete = async () => {
     if (requestInProgress.current) return;
-    
+
     try {
       requestInProgress.current = true;
       setLoading(true);
-      
+
       await deletePRD(id);
-      
+
       if (!isMounted.current) return;
-      
+
+      showToast('PRD deleted successfully', 'success'); // Show success toast
       navigate('/prds');
+
     } catch (err) {
       if (!isMounted.current) return;
-      
+
       console.error('Error deleting PRD:', err);
       setSaveError(err.message || 'Failed to delete PRD');
+      showToast(err.message || 'Failed to delete PRD', 'error'); // Show error toast
+
     } finally {
       if (isMounted.current) {
         setLoading(false);
@@ -253,29 +289,32 @@ const PRDDetail = () => {
   // Handle change document stage
   const handleChangeStage = async (stage) => {
     if (requestInProgress.current) return;
-    
+
     try {
       requestInProgress.current = true;
       setLoading(true);
       setSaveError(null);
-      
+
       const response = await updatePRDStage(id, stage);
-      
+
       if (!isMounted.current) return;
-      
+
       if (response?.status === 'success' && response.data) {
         setPRD(prev => ({
           ...prev,
           document_stage: response.data.document_stage
         }));
+         showToast(`PRD stage updated to ${response.data.document_stage}`, 'success'); // Show success toast
       } else {
         setSaveError('Failed to update document stage');
+        showToast('Failed to update document stage', 'error'); // Show error toast
       }
     } catch (err) {
       if (!isMounted.current) return;
-      
+
       console.error('Error updating document stage:', err);
       setSaveError(err.message || 'Failed to update document stage');
+      showToast(err.message || 'Failed to update document stage', 'error'); // Show error toast
     } finally {
       if (isMounted.current) {
         setLoading(false);
@@ -288,20 +327,20 @@ const PRDDetail = () => {
   const handleArchiveClick = () => {
     setShowArchiveModal(true);
   };
-  
+
   const handleArchiveConfirm = async () => {
     setShowArchiveModal(false);
-    
+
     if (requestInProgress.current) return;
-    
+
     try {
       requestInProgress.current = true;
       setLoading(true);
       setSaveError(null);
-      
+
       const isCurrentlyArchived = prd.document_stage === 'archived';
       let response;
-      
+
       // Jika PRD saat ini diarsipkan, kita perlu me-unarchive dengan mengubah status
       if (isCurrentlyArchived) {
         response = await updatePRDStage(id, 'draft');
@@ -309,22 +348,25 @@ const PRDDetail = () => {
         // Jika belum diarsipkan, gunakan endpoint archive
         response = await archivePRD(id);
       }
-      
+
       if (!isMounted.current) return;
-      
+
       if (response?.status === 'success' && response.data) {
         setPRD(prev => ({
           ...prev,
           document_stage: response.data.document_stage
         }));
+        showToast(response.data.document_stage === 'archived' ? 'PRD archived successfully' : 'PRD unarchived successfully', 'success'); // Show success toast
       } else {
         setSaveError(`Failed to ${isCurrentlyArchived ? 'unarchive' : 'archive'} PRD`);
+        showToast(`Failed to ${isCurrentlyArchived ? 'unarchive' : 'archive'} PRD`, 'error'); // Show error toast
       }
     } catch (err) {
       if (!isMounted.current) return;
-      
+
       console.error(`Error ${prd.document_stage === 'archived' ? 'unarchiving' : 'archiving'} PRD:`, err);
       setSaveError(err.message || `Failed to ${prd.document_stage === 'archived' ? 'unarchive' : 'archive'} PRD`);
+      showToast(err.message || `Failed to ${prd.document_stage === 'archived' ? 'unarchive' : 'archive'} PRD`, 'error'); // Show error toast
     } finally {
       if (isMounted.current) {
         setLoading(false);
@@ -336,22 +378,25 @@ const PRDDetail = () => {
   // Handle download
   const handleDownload = async () => {
     if (requestInProgress.current) return;
-    
+
     try {
       requestInProgress.current = true;
       setLoading(true);
       setSaveError(null); // Clear previous save errors
-      
+
       await downloadPRD(id);
-      
+
       console.log('Download triggered successfully from PRDDetail page.');
+      showToast('Download started successfully', 'success'); // Show success toast
+
 
     } catch (err) {
       if (!isMounted.current) return;
-      
+
       console.error('Error downloading PRD in component:', err);
       // Use the error message provided by the hook
       setSaveError(err.message || 'Failed to download PRD.');
+      showToast(err.message || 'Failed to download PRD', 'error'); // Show error toast
     } finally {
       if (isMounted.current) {
         setLoading(false);
@@ -370,10 +415,10 @@ const PRDDetail = () => {
         layout: 'text',
         type: 'custom'
       };
-      
+
       const updatedSections = [...customSections, newSection];
       setCustomSections(updatedSections);
-      
+
       // Format data yang akan dikirim ke server
       const updatedGeneratedSections = {
         ...(prd.generated_sections || {}),
@@ -381,36 +426,40 @@ const PRDDetail = () => {
           sections: updatedSections
         }
       };
-      
+
       // Save ke database
       const payload = {
         ...prd,
         generated_sections: updatedGeneratedSections
       };
-      
+
       // Hapus custom_sections dari root payload karena sudah masuk ke generated_sections
       delete payload.custom_sections;
       delete payload.id;
       delete payload.user_id;
       delete payload.created_at;
       delete payload.updated_at;
-      
+
       console.log('Adding new custom section, payload:', payload);
-      
+
       const response = await updatePRD(id, payload);
-      
+
       if (response?.status === 'success' && response.data) {
         // Update state dengan respons server
         setPRD(response.data);
-        
+
         // Extract custom sections dari response
         if (response.data.generated_sections?.custom_sections?.sections) {
           setCustomSections(response.data.generated_sections.custom_sections.sections);
         }
+        showToast('Custom section added successfully', 'success'); // Show success toast
+      } else {
+         showToast('Failed to add custom section', 'error'); // Show error toast
       }
     } catch (err) {
       console.error('Failed to add custom section:', err);
       setSaveError('Failed to add custom section: ' + (err.message || 'Unknown error'));
+      showToast('Failed to add custom section', 'error'); // Show error toast
     }
   };
 
@@ -420,9 +469,9 @@ const PRDDetail = () => {
     const updatedSections = customSections.map(section =>
       section.id === updatedSection.id ? updatedSection : section
     );
-    
+
     setCustomSections(updatedSections);
-    
+
     try {
       // Format untuk dikirim ke server
       const updatedGeneratedSections = {
@@ -431,39 +480,43 @@ const PRDDetail = () => {
           sections: updatedSections
         }
       };
-      
+
       // Kirim data ke server
       const payload = {
         ...prd,
         generated_sections: updatedGeneratedSections
       };
-      
+
       // Hapus custom_sections dari root payload
       delete payload.custom_sections;
       delete payload.id;
       delete payload.user_id;
       delete payload.created_at;
       delete payload.updated_at;
-      
+
       console.log('Saving PRD with custom sections:', updatedGeneratedSections.custom_sections);
-      
+
       // Panggil API update PRD
       const response = await updatePRD(id, payload);
-      
+
       if (response?.status === 'success' && response.data) {
         // Update with server response
         console.log('Server response after update:', response.data);
-        
+
         setPRD(response.data);
-        
+
         // Extract custom sections dari response
         if (response.data.generated_sections?.custom_sections?.sections) {
           setCustomSections(response.data.generated_sections.custom_sections.sections);
         }
+        showToast('Custom section updated successfully', 'success'); // Show success toast
+      } else {
+         showToast('Failed to update custom section', 'error'); // Show error toast
       }
     } catch (err) {
       console.error('Failed to update custom section:', err);
       setSaveError('Failed to save custom section: ' + (err.message || 'Unknown error'));
+      showToast('Failed to update custom section', 'error'); // Show error toast
     }
   };
 
@@ -472,7 +525,7 @@ const PRDDetail = () => {
     try {
       const updatedSections = customSections.filter(section => section.id !== sectionId);
       setCustomSections(updatedSections);
-      
+
       // Format untuk dikirim ke server
       const updatedGeneratedSections = {
         ...(prd.generated_sections || {}),
@@ -480,33 +533,37 @@ const PRDDetail = () => {
           sections: updatedSections
         }
       };
-      
+
       // Save ke database setelah delete
       const payload = {
         ...prd,
         generated_sections: updatedGeneratedSections
       };
-      
+
       // Hapus custom_sections dari root payload
       delete payload.custom_sections;
       delete payload.id;
       delete payload.user_id;
       delete payload.created_at;
       delete payload.updated_at;
-      
+
       const response = await updatePRD(id, payload);
-      
+
       if (response?.status === 'success' && response.data) {
         setPRD(response.data);
-        
+
         // Extract custom sections dari response
         if (response.data.generated_sections?.custom_sections?.sections) {
           setCustomSections(response.data.generated_sections.custom_sections.sections);
         }
+        showToast('Custom section deleted successfully', 'success'); // Show success toast
+      } else {
+         showToast('Failed to delete custom section', 'error'); // Show error toast
       }
     } catch (err) {
       console.error('Failed to delete custom section:', err);
       setSaveError('Failed to delete custom section: ' + (err.message || 'Unknown error'));
+      showToast('Failed to delete custom section', 'error'); // Show error toast
     }
   };
 
@@ -522,7 +579,7 @@ const PRDDetail = () => {
         else if (section === 'success_metrics') updated.generated_sections[section] = { metrics: [] };
         else if (section === 'project_timeline') updated.generated_sections[section] = { phases: [] };
       }
-      
+
       const sectionKeyMap = {
         'overview': 'sections',
         'darci': 'roles',
@@ -530,23 +587,26 @@ const PRDDetail = () => {
         'success_metrics': 'metrics',
         'project_timeline': 'phases'
       };
-      
+
       const arrKey = sectionKeyMap[section];
       if (!arrKey) return updated;
-      
+
       const arr = [...(updated.generated_sections[section][arrKey] || [])];
       arr[idx] = { ...arr[idx], [field]: value };
       updated.generated_sections[section][arrKey] = arr;
       
+      // Trigger debounced save for section changes
+      debouncedUpdate(updated);
+
       return updated;
     });
   };
-  
+
   const handleAddSection = (section) => {
     setPRD(prev => {
       const updated = { ...prev };
       if (!updated.generated_sections) updated.generated_sections = {};
-      
+
       const sectionConfigs = {
         'overview': { key: 'sections', template: { title: '', content: '' } },
         'darci': { key: 'roles', template: { name: '', members: [], guidelines: '' } },
@@ -554,28 +614,31 @@ const PRDDetail = () => {
         'success_metrics': { key: 'metrics', template: { name: '', target: '', current: '', definition: '' } },
         'project_timeline': { key: 'phases', template: { pic: '', activity: '', time_period: '' } }
       };
-      
+
       const config = sectionConfigs[section];
       if (!config) return updated;
-      
+
       if (!updated.generated_sections[section]) {
         updated.generated_sections[section] = { [config.key]: [] };
       }
-      
+
       updated.generated_sections[section][config.key] = [
         ...(updated.generated_sections[section][config.key] || []),
         { ...config.template }
       ];
       
+       // Trigger debounced save after adding section
+       debouncedUpdate(updated);
+
       return updated;
     });
   };
-  
+
   const handleRemoveSection = (section, idx) => {
     setPRD(prev => {
       const updated = { ...prev };
       if (!updated.generated_sections || !updated.generated_sections[section]) return updated;
-      
+
       const sectionKeyMap = {
         'overview': 'sections',
         'darci': 'roles',
@@ -583,14 +646,17 @@ const PRDDetail = () => {
         'success_metrics': 'metrics',
         'project_timeline': 'phases'
       };
-      
+
       const arrKey = sectionKeyMap[section];
       if (!arrKey) return updated;
-      
+
       const arr = [...(updated.generated_sections[section][arrKey] || [])];
       arr.splice(idx, 1);
       updated.generated_sections[section][arrKey] = arr;
       
+      // Trigger debounced save after removing section
+      debouncedUpdate(updated);
+
       return updated;
     });
   };
@@ -615,7 +681,7 @@ const PRDDetail = () => {
   if (error || !prd) {
     return (
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div 
+        <div
           className="bg-white rounded-lg shadow-sm p-6 text-center border border-gray-200"
         >
           <ExclamationTriangleIcon className="h-12 w-12 text-amber-500 mx-auto mb-4" />
@@ -633,7 +699,7 @@ const PRDDetail = () => {
   }
 
   return (
-    <div 
+    <div
       className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8"
     >
       {/* Add loading overlay that doesn't unmount the page */}
@@ -642,22 +708,25 @@ const PRDDetail = () => {
           <LoadingSpinner size="lg" text="Processing..." />
         </div>
       )}
-      
+
       <div className="bg-white shadow-sm rounded-lg overflow-hidden mb-8 border border-gray-200">
         {/* Header with actions */}
-        <PRDDetailHeader 
+        <PRDDetailHeader
           prd={prd}
           isEditing={isEditing}
           onEdit={handleEdit} // Pass handleEdit directly
           onSave={() => setIsEditing(false)} // Just handle edit mode
           onCancel={() => {
             setIsEditing(false);
-            // Reset any unsaved changes
-            setPRD(prev => ({
-              ...prev,
-              product_name: prd.product_name,
-              document_version: prd.document_version
-            }));
+            // Reset any unsaved changes - Note: This only resets top-level fields
+            // A more robust solution would involve storing a copy of the initial PRD data
+            if (prd) {
+              setPRD(prev => ({
+                ...prev,
+                product_name: prd.product_name, // Assuming these are the main editable fields here
+                document_version: prd.document_version
+              }));
+            }
           }}
           onDownload={handleDownload}
           onDelete={() => setShowDeleteModal(true)}
@@ -665,10 +734,10 @@ const PRDDetail = () => {
           onChangeStage={handleChangeStage}
         />
       </div>
-      
+
       {/* PRD Identity Section */}
       {prd && (
-        <PRDIdentitySection 
+        <PRDIdentitySection
           prd={prd}
           isEditing={isEditing}
           // Pass valid date strings or null/undefined if invalid
@@ -678,7 +747,7 @@ const PRDDetail = () => {
           onChange={handleDeepChange} // Use the new deep change handler
         />
       )}
-      
+
       {/* PRD Overview Section */}
       <PRDOverviewSection
         prd={prd}
@@ -688,9 +757,9 @@ const PRDDetail = () => {
         onRemoveSection={handleRemoveSection}
         onSectionChange={handleSectionChange}
       />
-      
+
       {/* DARCI Roles Section */}
-      {prd.generated_sections?.darci?.roles && (
+      {prd.generated_sections?.darci?.roles && ( // Conditional render
         <PRDDarciSection
           prd={prd}
           isEditing={isEditing}
@@ -699,9 +768,9 @@ const PRDDetail = () => {
           onAddSection={handleAddSection}
         />
       )}
-      
+
       {/* User Stories Section */}
-      {prd.generated_sections?.user_stories?.stories && (
+      {prd.generated_sections?.user_stories?.stories && ( // Conditional render
         <PRDUserStoriesSection
           prd={prd}
           isEditing={isEditing}
@@ -710,9 +779,9 @@ const PRDDetail = () => {
           onAddSection={handleAddSection}
         />
       )}
-      
+
       {/* Success Metrics Section */}
-      {prd.generated_sections?.success_metrics?.metrics && (
+      {prd.generated_sections?.success_metrics?.metrics && ( // Conditional render
         <PRDMetricsSection
           prd={prd}
           isEditing={isEditing}
@@ -721,9 +790,9 @@ const PRDDetail = () => {
           onAddSection={handleAddSection}
         />
       )}
-      
+
       {/* Project Timeline Section */}
-      {prd.generated_sections?.project_timeline?.phases && (
+      {prd.generated_sections?.project_timeline?.phases && ( // Conditional render
         <PRDTimelineSection
           prd={prd}
           isEditing={isEditing}
@@ -732,7 +801,7 @@ const PRDDetail = () => {
           onAddSection={handleAddSection}
         />
       )}
-      
+
       {/* Custom Sections */}
       {customSections.map(section => (
         <PRDCustomSection
@@ -743,14 +812,28 @@ const PRDDetail = () => {
           onDelete={handleDeleteCustomSection}
         />
       ))}
-      
+
       {/* Add New Section Toolbar - only visible in edit mode */}
       {isEditing && (
         <PRDSectionToolbar onAddCustomSection={handleAddCustomSection} />
       )}
+
+      {/* Error message */} {/* Keep this for persistent errors like load failures */}
+      {error && ( 
+        <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
       
-      {/* Error message */}
-      {saveError && (
+      {/* Save Error message - Can potentially be replaced by toast */}
+       {saveError && ( // Keep this for now, toast is transient
         <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -762,7 +845,7 @@ const PRDDetail = () => {
           </div>
         </div>
       )}
-      
+
       {/* Delete Confirmation Modal */}
       <ConfirmationModal
         isOpen={showDeleteModal}
@@ -780,7 +863,7 @@ const PRDDetail = () => {
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteModal(false)}
       />
-      
+
       {/* Archive Confirmation Modal */}
       <ConfirmationModal
         isOpen={showArchiveModal}
@@ -790,7 +873,7 @@ const PRDDetail = () => {
             Are you sure you want to {prd?.document_stage === 'archived' ? "unarchive" : "archive"} the PRD "<span className="font-semibold text-gray-700">
               {prd?.product_name}
             </span>"?
-            {prd?.document_stage !== 'archived' && 
+            {prd?.document_stage !== 'archived' &&
               " Archived PRDs are moved out of your main PRD list but are still accessible."
             }
           </span>
@@ -800,6 +883,14 @@ const PRDDetail = () => {
         confirmButtonClass="bg-amber-600 hover:bg-amber-700 focus:ring-amber-500"
         onConfirm={handleArchiveConfirm}
         onCancel={() => setShowArchiveModal(false)}
+      />
+      
+      {/* Toast component */}
+       <Toast
+        isVisible={toastState.isVisible}
+        message={toastState.message}
+        type={toastState.type}
+        onClose={hideToast}
       />
     </div>
   );

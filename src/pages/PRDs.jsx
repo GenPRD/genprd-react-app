@@ -17,6 +17,7 @@ import PRDFilters from '../components/prd/PRDFilters';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 import ContextMenu from '../components/common/ContextMenu';
 import { emitEvent, PRD_EVENTS } from '../utils/events';
+import Toast from '../components/common/Toast';
 
 const PRDs = () => {
   const { /* user */ } = useAuth();
@@ -46,6 +47,13 @@ const PRDs = () => {
     position: { x: 0, y: 0 },
     prd: null
   });
+  
+  // State for Toast messages
+  const [toastState, setToastState] = useState({
+    isVisible: false,
+    message: '',
+    type: 'success',
+  });
 
   // Available stage filters
   const stageFilters = [
@@ -55,6 +63,20 @@ const PRDs = () => {
     { value: 'finished', label: 'Finished' },
     { value: 'archived', label: 'Archived' }
   ];
+  
+  // Helper to show toast
+  const showToast = (message, type = 'success') => {
+    setToastState({
+      isVisible: true,
+      message,
+      type,
+    });
+  };
+
+  // Helper to hide toast
+  const hideToast = () => {
+    setToastState(prev => ({ ...prev, isVisible: false }));
+  };
 
   useEffect(() => {
     fetchPRDs();
@@ -152,15 +174,19 @@ const PRDs = () => {
         // Emit event after successful archive/unarchive
         emitEvent(PRD_EVENTS.ARCHIVE_TOGGLED, { prd: updatedPrd });
         
+        showToast(newStage === 'archived' ? 'PRD archived successfully' : 'PRD unarchived successfully', 'success');
+
         setShowArchiveModal(false);
         setActionPRD(null);
       } else {
         console.warn('Unexpected API response:', response);
         setActionError('Failed to archive PRD. Unexpected response from server.');
+        showToast('Failed to archive PRD', 'error');
       }
     } catch (error) {
       console.error('Error archiving PRD:', error);
       setActionError(error.message || 'Failed to archive PRD');
+      showToast(error.message || 'Failed to archive PRD', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -190,13 +216,18 @@ const PRDs = () => {
 
         // Emit event after successful pin toggle with updatedPrd
         emitEvent(PRD_EVENTS.PIN_TOGGLED, { prd: updatedPrd });
+        
+        showToast(newPinnedStatus ? 'PRD pinned successfully' : 'PRD unpinned successfully', 'success');
+
       } else {
         console.warn('Unexpected API response:', response);
         setActionError('Failed to update pin status. Unexpected response from server.');
+        showToast('Failed to update pin status', 'error');
       }
     } catch (error) {
       console.error('Error toggling pin status:', error);
       setActionError(error.message || 'Failed to update pin status');
+      showToast(error.message || 'Failed to update pin status', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -211,9 +242,13 @@ const PRDs = () => {
       setPrds(prds.filter(prd => prd.id !== actionPRD.id));
       setShowDeleteModal(false);
       setActionPRD(null);
+      
+      showToast('PRD deleted successfully', 'success');
+
     } catch (error) {
       console.error('Error deleting PRD:', error);
       setActionError(error.message || 'Failed to delete PRD');
+      showToast(error.message || 'Failed to delete PRD', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -233,10 +268,14 @@ const PRDs = () => {
           ? { ...p, updated_at: new Date().toISOString() } 
           : p
       ));
+      
+      showToast('Download started successfully', 'success');
+
     } catch (error) {
       console.error('Error downloading PRD in component:', error);
       // Use the error message provided by the hook
       setActionError(error.message || 'Failed to download PRD');
+      showToast(error.message || 'Failed to download PRD', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -275,13 +314,17 @@ const PRDs = () => {
         icon: <PencilSquareIcon className="h-5 w-5" />,
         label: 'Edit',
         onClick: () => {
+          handleContextMenuClose();
           window.location.href = `/prds/${prd.id}`;
         }
       },
       {
         icon: <ArrowDownTrayIcon className="h-5 w-5" />,
         label: 'Download',
-        onClick: () => handleDownload(prd)
+        onClick: () => {
+          handleDownload(prd);
+          handleContextMenuClose();
+        }
       },
       {
         icon: prd.is_pinned ? 
@@ -292,12 +335,16 @@ const PRDs = () => {
             <path strokeLinecap="round" strokeLinejoin="round" d="m11.48 3.499-.39-.396a.75.75 0 0 1 1.079-.148l11.25 11.025a.75.75 0 0 1-.12 1.155l-8.711 4.886a.75.75 0 0 1-.832-.132l-10.5-10.5a.75.75 0 0 1-.149-1.078l.396-.396 8.964-5.417Z" />
           </svg>,
         label: prd.is_pinned ? 'Unpin' : 'Pin',
-        onClick: () => handlePin(prd)
+        onClick: () => {
+          handlePin(prd);
+          handleContextMenuClose();
+        }
       },
       {
         icon: <ArchiveBoxIcon className="h-5 w-5" />,
         label: prd.document_stage === 'archived' ? 'Unarchive' : 'Archive',
         onClick: () => {
+          handleContextMenuClose();
           setActionPRD(prd);
           setShowArchiveModal(true);
         }
@@ -306,6 +353,7 @@ const PRDs = () => {
         icon: <TrashIcon className="h-5 w-5" />,
         label: 'Delete',
         onClick: () => {
+          handleContextMenuClose();
           setActionPRD(prd);
           setShowDeleteModal(true);
         },
@@ -459,6 +507,14 @@ const PRDs = () => {
           setShowArchiveModal(false);
           setActionPRD(null);
         }}
+      />
+      
+      {/* Toast component */}
+      <Toast
+        isVisible={toastState.isVisible}
+        message={toastState.message}
+        type={toastState.type}
+        onClose={hideToast}
       />
     </div>
   );
