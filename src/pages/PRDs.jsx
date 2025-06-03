@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+// import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { usePRD } from '../hooks/usePRD';
 import { 
@@ -19,15 +19,15 @@ import ContextMenu from '../components/common/ContextMenu';
 import { emitEvent, PRD_EVENTS } from '../utils/events';
 
 const PRDs = () => {
-  const { user } = useAuth();
+  const { /* user */ } = useAuth();
   const { 
     getAllPRDs, 
     archivePRD, 
     deletePRD, 
     downloadPRD, 
     togglePinPRD,
-    updatePRDStage,
-    loading: apiLoading, 
+    // updatePRDStage,
+    // loading: apiLoading, 
     error: apiError 
   } = usePRD();
   
@@ -222,16 +222,20 @@ const PRDs = () => {
   const handleDownload = async (prd) => {
     try {
       setActionLoading(true);
-      const response = await downloadPRD(prd.id);
-      if (response.status === 'success' && response.data?.download_url) {
-        setPrds(prds.map(p => 
-          p.id === prd.id 
-            ? { ...p, document_stage: 'finished', updated_at: new Date().toISOString() }
-            : p
-        ));
-        window.open(response.data.download_url, '_blank');
-      }
+      setActionError(null); // Clear previous action errors
+      
+      await downloadPRD(prd.id);
+      
+      console.log('Download triggered successfully from PRDs page.');
+      
+      setPrds(prds.map(p => 
+        p.id === prd.id 
+          ? { ...p, updated_at: new Date().toISOString() } 
+          : p
+      ));
     } catch (error) {
+      console.error('Error downloading PRD in component:', error);
+      // Use the error message provided by the hook
       setActionError(error.message || 'Failed to download PRD');
     } finally {
       setActionLoading(false);
@@ -333,12 +337,7 @@ const PRDs = () => {
       </div>
 
       {/* Loading State */}
-      {apiLoading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div>
-          <span className="ml-4 text-gray-600">Loading PRDs...</span>
-        </div>
-      )}
+      {/* {apiLoading && (\n        <div className=\"flex items-center justify-center py-12\">\n          <div className=\"animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900\"></div>\n          <span className=\"ml-4 text-gray-600\">Loading PRDs...</span>\n        </div>\n      )} */}
 
       {/* Error State */}
       {(apiError || actionError) && (
@@ -358,7 +357,7 @@ const PRDs = () => {
       )}
 
       {/* Content */}
-      {!apiLoading && (
+      {!apiError && (
         <>
           {/* Filters - Moved up with less bottom margin */}
           <PRDFilters
@@ -378,11 +377,8 @@ const PRDs = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
               {filteredPrds.map(prd => (
-                <motion.div
+                <div
                   key={prd.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
                   className="relative"
                   data-prd-id={prd.id}
                 >
@@ -400,7 +396,7 @@ const PRDs = () => {
                     }}
                     onDownload={() => handleDownload(prd)}
                   />
-                </motion.div>
+                </div>
               ))}
             </div>
           )}

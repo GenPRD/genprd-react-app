@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePRD } from '../hooks/usePRD';
 import { TrashIcon, ExclamationTriangleIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
-import { motion, AnimatePresence } from 'framer-motion'; // Tambahkan AnimatePresence di sini
+import { motion, AnimatePresence } from 'framer-motion';
 import debounce from 'lodash/debounce'; // Change to specific import
 
 // Import komponen-komponen terpisah
@@ -37,7 +37,6 @@ const PRDDetail = () => {
     archivePRD,
     updatePRDStage, // Make sure this is imported
     downloadPRD,
-    loading: apiLoading,
     setLoading: setApiLoading // Expose setLoading from hook
   } = usePRD();
   
@@ -187,50 +186,6 @@ const PRDDetail = () => {
     }
   };
 
-  // Handle save changes with debounce
-  const handleSave = async (changes = null) => {
-    if (requestInProgress.current) return;
-    
-    try {
-      requestInProgress.current = true;
-      setLoading(true);
-      setSaveError(null);
-      
-      // Include any immediate changes with the current PRD data
-      const updatedPRD = {
-        ...prd,
-        ...(changes || {}), // Merge any immediate changes
-        custom_sections: customSections
-      };
-      
-      console.log('Saving PRD with data:', updatedPRD); // Debug log
-      
-      const response = await updatePRD(id, updatedPRD);
-      
-      if (!isMounted.current) return;
-      
-      if (response?.status === 'success') {
-        // Update local state with server response
-        if (response.data) {
-          setPRD(response.data);
-        }
-        setIsEditing(false);
-      } else {
-        setSaveError('Failed to save changes');
-      }
-    } catch (err) {
-      if (!isMounted.current) return;
-      
-      console.error('Error saving PRD:', err);
-      setSaveError(err.message || 'Failed to save changes');
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-      requestInProgress.current = false;
-    }
-  };
-
   // Handle delete
   const handleDelete = async () => {
     if (requestInProgress.current) return;
@@ -347,29 +302,18 @@ const PRDDetail = () => {
     try {
       requestInProgress.current = true;
       setLoading(true);
+      setSaveError(null); // Clear previous save errors
       
-      const response = await downloadPRD(id);
+      await downloadPRD(id);
       
-      if (!isMounted.current) return;
-      
-      if (response?.status === 'success' && response.data?.download_url) {
-        window.open(response.data.download_url, '_blank');
-        
-        // Update PRD stage if server changed it
-        if (response.data.document_stage) {
-          setPRD(prev => ({
-            ...prev,
-            document_stage: response.data.document_stage
-          }));
-        }
-      } else {
-        setSaveError('Failed to generate download link');
-      }
+      console.log('Download triggered successfully from PRDDetail page.');
+
     } catch (err) {
       if (!isMounted.current) return;
       
-      console.error('Error downloading PRD:', err);
-      setSaveError(err.message || 'Failed to download PRD');
+      console.error('Error downloading PRD in component:', err);
+      // Use the error message provided by the hook
+      setSaveError(err.message || 'Failed to download PRD.');
     } finally {
       if (isMounted.current) {
         setLoading(false);

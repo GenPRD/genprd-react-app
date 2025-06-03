@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["http://localhost:5173", "https://genprd.et.r.appspot.com/"],
+    "method": ["GET"],
+    "responseHeader": ["Content-Type"],
+    "maxAgeSeconds": 3600
+  }
+]

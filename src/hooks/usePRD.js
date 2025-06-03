@@ -241,21 +241,65 @@ export const usePRD = () => {
     }
   };
   
-  // Perbarui fungsi downloadPRD untuk tidak lagi mengubah document_stage
+  // Perbarui fungsi downloadPRD untuk tidak lagi mengubah document_stage dan langsung trigger download
   const downloadPRD = async (id, options = {}) => {
     try {
       setLoading(true);
-      setError(null);
+      setError(null); // Clear previous errors
       
       // Tambahkan parameter update_stage=false untuk mencegah perubahan stage
       const queryParams = new URLSearchParams({ update_stage: 'false', ...options });
       
+      // Pertama, panggil API backend untuk mendapatkan URL unduhan
       const response = await api.get(`/prd/${id}/download?${queryParams.toString()}`);
-      return response.data;
+      
+      if (response.data?.status === 'success' && response.data?.data?.download_url) {
+        const downloadUrl = response.data.data.download_url;
+        const fileName = response.data.data.file_name || `prd_${id}.pdf`; // Gunakan nama file dari backend atau fallback
+
+        // Kedua, ambil konten PDF dari URL unduhan
+        console.log('Fetching PDF content from:', downloadUrl);
+        const pdfResponse = await axios.get(downloadUrl, {
+          responseType: 'blob', // Penting untuk mendapatkan data biner
+        });
+        console.log('PDF content fetched successfully.');
+
+        // Ketiga, buat URL objek dari blob dan trigger unduhan
+        const blob = new Blob([pdfResponse.data], { type: 'application/pdf' });
+        const blobUrl = window.URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+
+        // Trigger unduhan
+        link.click();
+
+        // Bersihkan URL objek dan elemen link
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(link);
+
+        console.log('Download triggered successfully.');
+        // Kembalikan indikasi sukses sederhana, bukan data penuh dari backend
+        return { status: 'success', message: 'Download triggered' };
+      } else {
+        // Handle case where backend call is successful but doesn't return a download URL
+        const errorMessage = response.data?.message || 'Backend did not provide a download URL.';
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      }
+
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Failed to download PRD';
-      setError(errorMsg);
-      throw err;
+      console.error('Error in downloadPRD hook:', err);
+      
+      // Extract detailed error message from backend response if available
+      const backendErrorMessage = err.response?.data?.message;
+      const defaultErrorMessage = 'Failed to download PRD. Please try again later.';
+      const errorMessage = backendErrorMessage || err.message || defaultErrorMessage;
+      
+      setError(errorMessage);
+      throw err; // Re-throw the error so the component can catch it too
     } finally {
       setLoading(false);
     }
