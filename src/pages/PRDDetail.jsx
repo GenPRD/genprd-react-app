@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePRD } from '../hooks/usePRD';
 import { TrashIcon, ExclamationTriangleIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
-import { motion, AnimatePresence } from 'framer-motion';
 import debounce from 'lodash/debounce'; // Change to specific import
 
 // Import komponen-komponen terpisah
@@ -146,6 +145,45 @@ const PRDDetail = () => {
       ...prev,
       [field]: value
     }));
+  };
+
+  // Use a more robust change handler that can update nested structures
+  const handleDeepChange = (path, value) => {
+    setPRD(prev => {
+      const updated = { ...prev };
+      // Simple deep update for common cases (e.g., 'field', 'section.field', 'section.array[index].field')
+      const keys = path.split('.');
+      let current = updated;
+      for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        const arrayMatch = key.match(/(.+)\[(\d+)\]/);
+        if (arrayMatch) {
+          const arrayKey = arrayMatch[1];
+          const index = parseInt(arrayMatch[2]);
+          if (!current[arrayKey]) current[arrayKey] = [];
+          if (!current[arrayKey][index]) current[arrayKey][index] = {};
+          current = current[arrayKey][index];
+        } else {
+          if (!current[key]) current[key] = {};
+          current = current[key];
+        }
+      }
+      const lastKey = keys[keys.length - 1];
+      const lastArrayMatch = lastKey.match(/(.+)\[(\d+)\]/);
+       if (lastArrayMatch) {
+          const arrayKey = lastArrayMatch[1];
+          const index = parseInt(lastArrayMatch[2]);
+           if (!current[arrayKey]) current[arrayKey] = [];
+          current[arrayKey][index] = value; // Assign value to array element
+       } else {
+         current[lastKey] = value;
+       }
+      
+      // Trigger debounced save for any change
+      debouncedUpdate(updated);
+      
+      return updated;
+    });
   };
 
   const handleEdit = async (changes) => {
@@ -564,13 +602,11 @@ const PRDDetail = () => {
   if (isLoading && !prd) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
+        <div
+          className="flex items-center justify-center min-h-screen"
         >
           <LoadingSpinner size="xl" text="Loading PRD..." />
-        </motion.div>
+        </div>
       </div>
     );
   }
@@ -579,11 +615,8 @@ const PRDDetail = () => {
   if (error || !prd) {
     return (
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <motion.div 
+        <div 
           className="bg-white rounded-lg shadow-sm p-6 text-center border border-gray-200"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
         >
           <ExclamationTriangleIcon className="h-12 w-12 text-amber-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading PRD</h2>
@@ -594,17 +627,14 @@ const PRDDetail = () => {
           >
             Back to PRDs
           </button>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <motion.div 
+    <div 
       className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
     >
       {/* Add loading overlay that doesn't unmount the page */}
       {isLoading && (
@@ -637,11 +667,16 @@ const PRDDetail = () => {
       </div>
       
       {/* PRD Identity Section */}
-      <PRDIdentitySection 
-        prd={prd}
-        isEditing={isEditing}
-        onChange={handleChange}
-      />
+      {prd && (
+        <PRDIdentitySection 
+          prd={prd}
+          isEditing={isEditing}
+          // Pass valid date strings or null/undefined if invalid
+          startDate={prd.start_date ? new Date(prd.start_date).toISOString().split('T')[0] : ''}
+          endDate={prd.end_date ? new Date(prd.end_date).toISOString().split('T')[0] : ''}
+          onChange={handleDeepChange} // Use the new deep change handler
+        />
+      )}
       
       {/* PRD Overview Section */}
       <PRDOverviewSection
@@ -765,7 +800,7 @@ const PRDDetail = () => {
         onConfirm={handleArchiveConfirm}
         onCancel={() => setShowArchiveModal(false)}
       />
-    </motion.div>
+    </div>
   );
 };
 
