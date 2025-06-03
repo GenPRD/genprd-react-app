@@ -672,8 +672,9 @@ const PRDDetail = () => {
           prd={prd}
           isEditing={isEditing}
           // Pass valid date strings or null/undefined if invalid
-          startDate={prd.start_date ? new Date(prd.start_date).toISOString().split('T')[0] : ''}
-          endDate={prd.end_date ? new Date(prd.end_date).toISOString().split('T')[0] : ''}
+          // More robust date check
+          startDate={prd.start_date && !isNaN(new Date(prd.start_date).getTime()) ? new Date(prd.start_date).toISOString().split('T')[0] : ''}
+          endDate={prd.end_date && !isNaN(new Date(prd.end_date).getTime()) ? new Date(prd.end_date).toISOString().split('T')[0] : ''}
           onChange={handleDeepChange} // Use the new deep change handler
         />
       )}
