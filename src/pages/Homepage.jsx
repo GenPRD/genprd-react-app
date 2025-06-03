@@ -115,6 +115,7 @@ const Homepage = () => {
               initial="hidden"
               animate="visible"
               variants={fadeInUp}
+              className="text-center md:text-left"
             >
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-gray-900 mb-6 leading-tight">
                 Create Better PRDs with <span className="text-primary-600">AI Assistance</span>
