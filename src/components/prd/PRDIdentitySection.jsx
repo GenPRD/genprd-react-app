@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return 'Invalid Date';
+  }
   return date.toLocaleDateString('en-US', { 
     year: 'numeric',
     month: 'long',
@@ -14,6 +17,9 @@ const calculateDuration = (startDate, endDate) => {
   if (!startDate || !endDate) return 'N/A';
   const start = new Date(startDate);
   const end = new Date(endDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return 'Invalid Dates';
+  }
   const diffTime = Math.abs(end - start);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return `${diffDays} days`;
