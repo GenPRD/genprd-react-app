@@ -124,7 +124,7 @@ const PRDLoadingOverlay = ({ isVisible = true, step }) => {
           </div>
           
           <p className="text-sm text-gray-500 mt-6">
-            This may take a minute or two...
+            This may take a few seconds...
           </p>
         </div>
       </div>
